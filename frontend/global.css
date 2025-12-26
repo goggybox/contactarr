@@ -1,0 +1,21 @@
+* {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+    font-family: 'Cantarell'
+}
+
+body {
+    background: var(--primary-background-colour);
+    color: var(--primary-text-colour);
+    display: flex;
+}
+
+:root {
+    --primary-text-colour: #ebddbe;
+    --primary-background-colour: #2e2b23;
+    --secondary-background-colour: #1f1d17;
+    --secondary-background-highlighted-colour: #2b2821;
+    --primary-accent-colour: #ffb224;
+    --secondary-accent-colour: #cf911e;
+}
