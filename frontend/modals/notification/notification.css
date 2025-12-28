@@ -1,0 +1,41 @@
+.notification-modal {
+    position: fixed;
+    left: 50%;
+    top: 20px;
+    transform: translateX(-50%) translateY(0);
+    max-width: 400px;
+    width: 400px;
+    text-align: center;
+    background: var(--secondary-background-colour);
+    border: 4px solid var(--primary-accent-colour);
+    box-shadow: rgba(0, 0, 0, 0.25) 0px 54px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px;
+    border-radius: 10px;
+    padding: 30px;
+    transition: transform 0.5s ease, box-shadow 0.5s ease;
+}
+
+.notification-modal.hide {
+    transform: translateX(-50%) translateY(-150%);
+    box-shadow: none;
+}
+
+.notification-modal.error {
+    background: var(--primary-error-background-colour);
+    color: var(--primary-error-text-colour);
+    border-color: var(--primary-error-text-colour);
+}
+
+.notification-modal.success {
+    background: var(--primary-success-background-colour);
+    color: var(--primary-success-text-colour);
+    border-color: var(--primary-success-text-colour);
+}
+
+.notification-modal-close {
+    position: absolute;
+    right: 0;
+    color: var(--secondary-text-colour);
+    cursor: pointer;
+    padding: 2px 8px 2px 5px;
+    top: 0;
+}

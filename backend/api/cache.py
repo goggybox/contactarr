@@ -66,7 +66,6 @@ class APICacheManager:
                 lock = self.revalidate_locks.setdefault(url, Lock())
 
                 with lock:
-                    logger.info(f"Revalidating cache for: {url}")
                     response = requests.get(url, headers=headers, params=params, timeout=30)
                     response.raise_for_status()
                     new_data = response.json()
@@ -78,8 +77,6 @@ class APICacheManager:
                             callback(new_data)
                         except Exception as e:
                             logger.error(f"Error in callback for {url}: {e}")
-                    
-                    logger.info(f"Cache revalidated successfully for: {url}")
 
             except Exception as e:
                 logger.error(f"Error revalidating cache for {url}: {e}")
@@ -92,13 +89,11 @@ class APICacheManager:
 
         cache_data = self._load_cache(cache_key)
         if cache_data:
-            logger.info(f"Cache hit for: {url}")
             self._revalidate_async(url, callback, headers, params, cache_key)
             return cache_data['data']
 
         # no valid cache, fetch fresh data
         try:
-            logger.info(f"Fetching fresh data for: {url}")
             response = requests.get(url, headers=headers, params=params, timeout=30)
             response.raise_for_status()
             data = response.json()
@@ -124,7 +119,6 @@ class APICacheManager:
             try:
                 if os.path.exists(cache_path):
                     os.remove(cache_path)
-                    logger.info(f"Cleared cache for: {url}")
             except OSError as e:
                 logger.error(f"Error clearing cache for {url}: {e}")
 
@@ -137,7 +131,6 @@ class APICacheManager:
                     os.remove(file)
                 except OSError:
                     pass
-            logger.info("Cleared all cache")
 
 
 cache_manager = APICacheManager()
