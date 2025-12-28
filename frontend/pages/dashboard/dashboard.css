@@ -1,0 +1,41 @@
+.user-list-container {
+    width: 500px;
+}
+
+.user-list-container h2 {
+    margin-bottom: 10px;
+}
+
+.user-list {
+    background-color: var(--primary-input-box-colour);
+    border: 3px solid var(--secondary-background-colour);
+    padding: 10px;
+}
+
+.user-container {
+    display: flex;
+}
+
+.user-name {
+    display: flex;
+    gap: 5px;
+}
+
+.name {
+    font-weight: 600;
+    font-size: 1.1em;
+}
+
+.username {
+    color: var(--tertiary-text-colour);
+    font-size: 1.1em;
+}
+
+.email {
+    color: var(--quaternary-text-colour);
+}
+
+.user-right {
+    margin-left: auto;
+    font-size: 1.1em;
+}

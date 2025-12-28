@@ -13,9 +13,28 @@ body {
 
 :root {
     --primary-text-colour: #ebddbe;
+    --secondary-text-colour: #595343;
+    --tertiary-text-colour: #b9ae94;
+    --quaternary-text-colour: #958b75;
     --primary-background-colour: #2e2b23;
+    --primary-background-highlighted-colour: #403b30;
     --secondary-background-colour: #1f1d17;
     --secondary-background-highlighted-colour: #2b2821;
     --primary-accent-colour: #ffb224;
     --secondary-accent-colour: #cf911e;
+    --primary-input-box-colour: #595243;
+
+    --primary-cancel-button-background-colour: #474336;
+    --secondary-cancel-button-background-colour: #595243;
+
+    --primary-test-button-background-colour: #588765;
+    --secondary-test-button-background-colour: #5e8c6b;
+
+    --primary-error-background-colour: #402222;
+    --primary-error-text-colour: #995050;
+
+    --primary-success-background-colour: #5e8c6b;
+    --primary-success-text-colour: #2f4c37;
+
+    --box-shadow: rgba(0, 0, 0, 0.2) 0px 7px 29px 0px;
 }
