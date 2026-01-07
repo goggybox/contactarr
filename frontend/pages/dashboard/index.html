@@ -1,3 +1,28 @@
+<!-- 
+
+# -----------------------------contactarr------------------------------
+This file is part of contactarr
+Copyright (C) 2025 goggybox https://github.com/goggybox
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+that this program is licensed under. See LICENSE file. If not
+available, see <https://www.gnu.org/licenses/>.
+
+Please keep this header comment in all copies of the program.
+--------------------------------------------------------------------
+
+-->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,6 +34,7 @@
   <link rel="icon" href="contactarr.png">
   <link rel="stylesheet" href="/modals/notification/notification.css">
   <link rel="stylesheet" href="/pages/dashboard/dashboard.css">
+  <link rel="stylesheet" href="/emails/titan/titan.css">
 </head>
 <body>
   <div class="sidebar">
@@ -22,21 +48,27 @@
       </ul>
     </nav>
   </div>
-  <div class="content">
-    <div class="user-list-container">
-      <h2>Users</h2>
-      <div class="user-list">
-        <div class="user-container">
-          <div class="user-left">
-            <div class="user-name">
-              <p class="name">Aidan</p>
-              <p class="username">(aidanc2030)</p>
-            </div>
-            <p class="email">me@aidan.digital</p>
+  <div class="content-wrapper">
+    <div class="content">
+      <div class="user-list-container">
+        <h2>Users</h2>
+        <div id="user-list">
+          
+        </div>
+      </div>
+      <div class="email-container" id="email-container">
+        <h2>Email</h2>
+        <div class="email-selector">
+          <p class="selector selected" id="titan-selector" onclick="titanSelected()">Titan</p>
+          <p class="selector" id="overseerr-selector" onclick="overseerrSelected()">Overseerr</p>
+        </div>
+        <div class="html-email-container">
+          <p>The HTML email will look as follows:</p>
+          <div id="embed-container">
+
           </div>
-          <div class="user-right">
-            <p>Last seen:</p>
-          </div>
+          <p>Enter HTML code to add to the email:</p>
+          <textarea id="htmlInput" rows="7"></textarea>
         </div>
       </div>
     </div>

@@ -1,19 +1,72 @@
+/* 
+
+# -----------------------------contactarr------------------------------
+This file is part of contactarr
+Copyright (C) 2025 goggybox https://github.com/goggybox
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+that this program is licensed under. See LICENSE file. If not
+available, see <https://www.gnu.org/licenses/>.
+
+Please keep this header comment in all copies of the program.
+--------------------------------------------------------------------
+
+*/
+
+.content {
+    display: flex;
+    gap: 50px;
+    min-height: 0px;
+}
+
 .user-list-container {
-    width: 500px;
+    width: 450px;
+    max-height: 950px;
 }
 
 .user-list-container h2 {
     margin-bottom: 10px;
 }
 
-.user-list {
+#user-list {
     background-color: var(--primary-input-box-colour);
     border: 3px solid var(--secondary-background-colour);
-    padding: 10px;
+    padding: 0px;
+    max-height: 900px;
+    overflow-y: auto;
 }
 
 .user-container {
     display: flex;
+    padding: 10px;
+    border-bottom: 1px solid var(--tertiary-text-colour);
+    user-select: none;
+    cursor: pointer;
+}
+
+.user-container#last {
+    border-bottom: 0px;
+}
+
+.user-container:hover {
+    background-color: rgba(0,0,0,0.1);
+}
+
+.user-left {
+    width: 275px;
+    flex: 0 0 auto;
+    overflow-x: auto;
+    scrollbar-width: thin;
 }
 
 .user-name {
@@ -35,7 +88,93 @@
     color: var(--quaternary-text-colour);
 }
 
+.last-seen {
+    font-size: 16px;
+    color: var(--tertiary-text-colour);
+}
+
+.last-seen-date {
+    font-size: 14px;
+    color: var(--quaternary-text-colour);
+}
+
 .user-right {
     margin-left: auto;
+    margin-top: auto;
+    align-items: right;
+    justify-content: right;
     font-size: 1.1em;
+}
+
+.user-right * {
+    text-align: right;
+}
+
+.email-container {
+    flex: 1;
+    height: fit-content;
+}
+
+.email-container h2 {
+    margin-bottom: 20px;
+}
+
+.email-selector {
+    display: flex;
+    gap: 10px;
+    border-bottom: 2px solid var(--primary-background-highlighted-colour);
+}
+
+.selector {
+    padding: 10px 20px 10px 20px;
+    user-select: none;
+}
+
+.selector:hover {
+    cursor: pointer;
+    background: var(--primary-background-secondary-highlighted-colour);
+}
+
+.selector.selected {
+    background: var(--primary-background-highlighted-colour);
+}
+
+#embed-container {
+    height: 600px;
+    background: var(--titan-email-backdrop-colour);
+    border: 3px solid var(--secondary-background-colour);
+    margin: 10px;
+    padding-top: 40px;
+    overflow-y: auto;
+}
+
+.html-email-container {
+    border: 2px solid var(--primary-background-highlighted-colour);
+    border-top: 0px;
+    padding: 10px;
+    padding-top: 15px;
+}
+
+#htmlInput {
+    margin-top: 5px;
+    width: 100%;
+    resize: none;
+    background: var(--primary-input-box-colour);
+    text-decoration: none;
+    outline: none;
+    caret-color: var(--primary-accent-colour);
+    padding: 5px;
+    border: 3px solid var(--secondary-background-colour);
+    color: var(--tertiary-text-colour);
+}
+
+.tautulli-error-message-container {
+    background: var(--primary-error-background-colour);
+    color: var(--primary-error-text-colour);
+    padding: 10px 10px;
+    text-align: center;
+}
+
+.tautulli-error-message-container p {
+    font-size: 18px;
 }

@@ -1,6 +1,28 @@
+
+# # -----------------------------contactarr------------------------------
+# This file is part of contactarr
+# Copyright (C) 2025 goggybox https://github.com/goggybox
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# that this program is licensed under. See LICENSE file. If not
+# available, see <https://www.gnu.org/licenses/>.
+
+# Please keep this header comment in all copies of the program.
+# --------------------------------------------------------------------
+
 import os
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from backend.api.cache import apiGet, clearCache
 from backend.api import config
@@ -114,10 +136,33 @@ def get_users():
             # get date and time watch ended
             ended_unix = most_recent['stopped']
             dt = datetime.fromtimestamp(ended_unix)
-            formatted_dt = f"{dt.strftime("%H")}:{dt.strftime("%M")}, {dt.strftime("%a")} {dt.strftime("%d")} {dt.strftime("%b")}"
+            
+            # format date
+            now = datetime.now()
+            diff = now - dt
+
+            seconds = int(diff.total_seconds())
+            intervals = [
+                ("year", 31536000),
+                ("month", 2592000),
+                ("week", 604800),
+                ("day", 86400),
+                ("hour", 3600),
+                ("minute", 60)
+            ]
+
+            if seconds < 60:
+                formatted_dt = "just now"
+            
+            for name, unit_seconds in intervals:
+                value = seconds // unit_seconds
+                if value >= 1:
+                    formatted_dt = f"{value} {name}{'s' if value != 1 else ''} ago"
+                    break
             
             u['last_played'] = title
             u['last_seen'] = formatted_dt
+            u['last_seen_date'] = dt.strftime("%H:%M, %a %d %b")
             u['last_seen_unix'] = ended_unix
 
     # order the list by last_seen
@@ -127,14 +172,15 @@ def get_users():
         reverse=True
     )
 
-    # print("="*142)
-    # id_space = 10
-    # space = 20
-    # is_active_space = 9
-    # is_home_user_space = 12
-    # print("ID"+(" "*8)+"| USERNAME"+(" "*12)+"| NAME"+(" "*16)+"| EMAIL"+(" "*15)+"| IS_ACTIVE"+" |"+" IS_HOME_USER" +" |"+" LAST SEEN          " + "|" + " LAST PLAYED         ")
+    print("="*142)
+    id_space = 10
+    space = 20
+    is_active_space = 9
+    is_home_user_space = 12
+    print("ID"+(" "*8)+"| USERNAME"+(" "*12)+"| NAME"+(" "*16)+"| EMAIL"+(" "*15)+"| IS_ACTIVE"+" |"+" IS_HOME_USER" +" |"+" LAST SEEN          " + "|" + " LAST PLAYED         ")
 
-    # for u in filtered_array:
+    for u in filtered_array:
+        print(type(u['last_seen']))
     #     id = str(u['user_id'])+(" "*(id_space - len(str(u['user_id']))))+"| "
     #     username = u['username'][:space]+(" "*(space - len(u['username'])))+"| "
     #     name = u['friendly_name'][:space]+(" "*(space - len(u['friendly_name'])))+"| "
