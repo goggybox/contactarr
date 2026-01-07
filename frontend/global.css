@@ -1,3 +1,28 @@
+/* 
+
+# -----------------------------contactarr------------------------------
+This file is part of contactarr
+Copyright (C) 2025 goggybox https://github.com/goggybox
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+that this program is licensed under. See LICENSE file. If not
+available, see <https://www.gnu.org/licenses/>.
+
+Please keep this header comment in all copies of the program.
+--------------------------------------------------------------------
+
+*/
+
 * {
     padding: 0;
     margin: 0;
@@ -11,6 +36,11 @@ body {
     display: flex;
 }
 
+html, body {
+    overflow: hidden;
+    height: 100%;
+}
+
 :root {
     --primary-text-colour: #ebddbe;
     --secondary-text-colour: #595343;
@@ -18,6 +48,7 @@ body {
     --quaternary-text-colour: #958b75;
     --primary-background-colour: #2e2b23;
     --primary-background-highlighted-colour: #403b30;
+    --primary-background-secondary-highlighted-colour: #332f26;
     --secondary-background-colour: #1f1d17;
     --secondary-background-highlighted-colour: #2b2821;
     --primary-accent-colour: #ffb224;
@@ -30,11 +61,19 @@ body {
     --primary-test-button-background-colour: #588765;
     --secondary-test-button-background-colour: #5e8c6b;
 
-    --primary-error-background-colour: #402222;
-    --primary-error-text-colour: #995050;
+    --primary-error-background-colour: #603232;
+    --primary-error-text-colour: #be6565;
 
     --primary-success-background-colour: #5e8c6b;
     --primary-success-text-colour: #2f4c37;
 
     --box-shadow: rgba(0, 0, 0, 0.2) 0px 7px 29px 0px;
+
+    /* Titan email colours */
+    --titan-email-backdrop-colour: #1B1E23;
+    --titan-email-background-colour: #000000;
+    --titan-email-primary-accent-colour: #EBAE00;
+    --titan-email-primary-text-colour: white;
+    --titan-email-secondary-text-colour: #BFBFBF;
+    --titan-email-footer-border: #555a61;
 }

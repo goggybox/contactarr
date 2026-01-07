@@ -1,0 +1,86 @@
+/* 
+
+# -----------------------------contactarr------------------------------
+This file is part of contactarr
+Copyright (C) 2025 goggybox https://github.com/goggybox
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+that this program is licensed under. See LICENSE file. If not
+available, see <https://www.gnu.org/licenses/>.
+
+Please keep this header comment in all copies of the program.
+--------------------------------------------------------------------
+
+*/
+
+.titan-email-container {
+    font-family: Arial, sans-serif;
+    max-width: 700px;
+    margin: auto;
+    background: var(--titan-email-background-colour);
+    padding: 0px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    overflow-y: auto;
+    margin-bottom: 40px;
+}
+
+#titan-content-container {
+    padding: 30px;
+}
+
+.titan-email-container h2 {
+    color: var(--titan-email-primary-accent-colour);
+    padding: 0px;
+    margin: 0px;
+    margin-bottom: 20px;
+    border: 0px;
+}
+
+.titan-banner {
+    display: block;
+    width: 100%;
+    border-radius: 10px 10px 0 0;
+    margin: 0 auto;
+}
+
+.titan-email-container hr {
+    color: var(--titan-email-primary-accent-colour);
+    margin: 30px 0;
+}
+
+.titan-email-container strong {
+    color: var(--titan-email-primary-accent-colour);
+}
+
+.titan-email-container p {
+    color: var(--titan-primary-text-colour);
+    font-size: 18px;
+    margin-bottom: 20px;
+}
+
+.titan-footer {
+    border-top: 2px solid var(--titan-email-footer-border);
+    padding: 18px 7px 20px 7px;
+}
+
+.titan-footer p {
+    color: var(--titan-email-secondary-text-colour);
+    text-align: center;
+    font-size: 14px;
+    margin-bottom: 0px;
+}
+
+.titan-email-container a {
+    color: inherit;
+}
