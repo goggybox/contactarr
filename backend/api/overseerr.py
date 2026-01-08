@@ -52,7 +52,7 @@ def getFromAPI(cmd, args=None):
                 params[k] = v
     
     try:
-        data = apiGet(url=api_url, headers=headers, params=params)
+        data = apiGet(url=url, headers=headers, params=params)
 
         if data:
             return data
@@ -64,7 +64,6 @@ def getFromAPI(cmd, args=None):
 def alive():
     """check if the overseerr instance is alive"""
     response = getFromAPI("status")
-    print(f"OVERSEERR ALIVE CHECK: {response}")
     return True if response != None else False
 
 def apikey():
