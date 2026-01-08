@@ -26,7 +26,6 @@ async function initTautulliAPIInputBox() {
     // tautulli api key
     const inp = document.getElementById("tautulli-connection-input-box");
     let res = await fetch("/backend/tautulli/apikey");
-    await fetch("/backend/populate_shows");
     tautulli_key = await res.text();
     inp.value = tautulli_key;
     inp.addEventListener('input', tautulliAPIKeyListener);

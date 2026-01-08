@@ -23,4 +23,5 @@
 window.onload = async function() {
     initTautulliURLInputBox();
     initTautulliAPIInputBox();
+    await fetch("/backend/populate_movies");
 }

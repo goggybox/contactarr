@@ -50,6 +50,16 @@ def _get_table(conn, name):
     contents = conn.execute(f"SELECT * FROM {name}").fetchall()
     return [dict(row) for row in contents]
 
+def _get_movie_id_from_rating_key(conn, rating_key):
+    """
+    get a movie's id from its rating_key
+    """
+    row = conn.execute(
+        "SELECT movie_id FROM movies WHERE rating_key = ? LIMIT 1",
+        (rating_key,)
+    ).fetchone()
+    return row["movie_id"] if row else None
+
 def _get_show_id_from_rating_key(conn, rating_key):
     """
     get a show's id from its rating_key
@@ -57,7 +67,7 @@ def _get_show_id_from_rating_key(conn, rating_key):
     row = conn.execute(
         "SELECT show_id FROM shows WHERE rating_key = ? LIMIT 1",
         (rating_key,)
-    )
+    ).fetchone()
     return row["show_id"] if row else None
 
 def _get_season_id_from_rating_key(conn, rating_key):
@@ -67,7 +77,7 @@ def _get_season_id_from_rating_key(conn, rating_key):
     row = conn.execute (
         "SELECT season_id FROM seasons WHERE rating_key = ? LIMIT 1",
         (rating_key,)
-    )
+    ).fetchone()
     return row["season_id"] if row else None
 
 def _get_episode_id_from_rating_key(conn, rating_key):
@@ -77,7 +87,7 @@ def _get_episode_id_from_rating_key(conn, rating_key):
     row = conn.execute (
         "SELECT episode_id FROM episodes WHERE rating_key = ? LIMIT 1",
         (rating_key,)
-    )
+    ).fetchone()
     return row["episode_id"] if row else None
 
 def _attr_val_in_table(conn, attr, val, name):
@@ -99,6 +109,32 @@ def _add_to_table(conn, attrs, vals, name):
         vals
     )
     return
+
+def _update_row_or_ignore(conn, attrs, vals, name):
+    """
+    update a row in the "name" table using the given attrs and vals.
+        - the PRIMARY KEY attribute will be included (as the first attr) in attrs, which is
+          used to find the exact row to modify.
+        - if no row exists with the primary key value, fail silently.
+    """
+    attr_list = [attr.strip() for attr in attrs.split(",")]
+    if not attr_list:
+        return
+    
+    pk = attr_list[0]
+    update_attrs = attr_list[1:]
+
+    if not update_attrs:
+        return
+
+    set_clause = ", ".join(f"{attr}=?" for attr in update_attrs)
+    pk_value = vals[0]
+    update_values = vals[1:] + [pk_value] # SET ... WHERE pk = ?
+
+    query = f"UPDATE {name} SET {set_clause} WHERE {pk} = ?"
+
+    conn.execute(query, update_values)
+
 
 def _add_or_ignore_to_table(conn, attrs, vals, name):
     """
@@ -188,6 +224,8 @@ def populate_shows():
             if history and isinstance(history, list) and len(history) > 0:
                 for episode in history:
                     show_rating_key = episode["grandparent_rating_key"]
+                    season_rating_key = episode["parent_rating_key"]
+                    episode_rating_key = episode["rating_key"]
 
                     # if the show isn't already in the shows table, add it.
                     _add_or_ignore_to_table(conn,
@@ -197,30 +235,104 @@ def populate_shows():
                     )
 
                     show_id = _get_show_id_from_rating_key(conn, show_rating_key)
-                    season_num = episode["parent_title"].split()[1] # episode["parent_title"] is of format "Season 1"
+                    season_name_split = episode.get("parent_title").split() # e.g. ["Season", "1"]
+                    if season_name_split and len(season_name_split) > 1:
+                        season_num = season_name_split[1]
 
-                    # if this season isn't already in the season table, add it.
+                    # if this season isn't already in the seasons table, add it.
                     #   - cannot add episode_count or added_at values from this data, will add later.
+                    if episode["grandparent_title"] == "Desperate Housewives":
+                        print(f"DESPERATE HOUSEWIVES {season_num}")
                     _add_or_ignore_to_table(conn,
                         "show_id, season_num, rating_key",
-                        [show_id, season_num, episode["parent_rating_key"]],
+                        [show_id, season_num, season_rating_key],
                         "seasons"
                     )
 
                     season_id = _get_season_id_from_rating_key(conn, season_rating_key)
 
-                    # if this season isn't already in the episode table, add it.
+                    # if this episode isn't already in the episodes table, add it.
                     _add_or_ignore_to_table(conn,
-                        "season_id, rating_key, number, name",
-                        [season_id, episode["rating_key"], episode["media_index"], episode["title"]],
+                        "season_id, show_id, rating_key, number, name",
+                        [season_id, show_id, episode_rating_key, episode["media_index"], episode["title"]],
                         "episodes"
                     )
 
                     episode_id = _get_episode_id_from_rating_key(conn, episode_rating_key)
 
+                    # add an entry in episode_watches if not already there
+                    _add_or_ignore_to_table(conn,
+                        "user_id, episode_id, started, stopped, pause_duration",
+                        [episode["user_id"], episode_id, episode["started"], episode["stopped"], episode["paused_counter"]],
+                        "episode_watches"
+                    )
 
+        # populate season_added table
+        #   - for each show in the shows table, use "/get_library_media_info"
+        #     which includes "added_at" values
+        shows = _get_table(conn, "shows")
 
-        # still need to populate seasons' episode_count and added_at values
+        for show in shows:
+            seasons = tautulli.get_library_media_info(show["rating_key"])
+
+            if seasons and isinstance(seasons, list) and len(seasons) > 0:
+
+                # first, add show's year from "parent_year" field from "/get_metadata" for one season
+                season_metadata = tautulli.get_metadata(seasons[0]["rating_key"])
+                _update_row_or_ignore(conn,
+                    "show_id, year",
+                    [_get_show_id_from_rating_key(conn, seasons[0]["parent_rating_key"]), season_metadata["parent_year"]],
+                    "shows"
+                )
+
+                for season in seasons:
+                    _add_or_ignore_to_table(conn,
+                        "season_id, added_at",
+                        [_get_season_id_from_rating_key(conn, season["rating_key"]), season["added_at"]],
+                        "season_added"
+                    )
+
+def populate_movies():
+    with get_connection() as conn:
+        users = _get_table(conn, "users")
+        
+        # loop through every user
+        for user in users:
+            # get the list of episodes watched by the user
+            history = tautulli.get_movie_watch_history(user["user_id"])
+
+            if history and isinstance(history, list) and len(history) > 0:
+                for movie in history:
+                    rating_key = movie["rating_key"]
+
+                    # add movie to movies table if not already there
+                    _add_or_ignore_to_table(conn,
+                        "movie_name, year, rating_key",
+                        [movie["title"], movie["year"], rating_key],
+                        "movies"
+                    )
+
+                    movie_id = _get_movie_id_from_rating_key(conn, rating_key)
+
+                    # get when the movie was added (from "/get_metadata" endpoint) and add to movie_added table
+                    # if not already there
+                    if not _attr_val_in_table(conn, "movie_id", movie_id, "movie_added"):
+                        metadata = tautulli.get_metadata(rating_key)
+                        if metadata:
+                            added_at = metadata["added_at"]
+                            # add to table
+                            _add_or_ignore_to_table(conn,
+                                "movie_id, added_at",
+                                [movie_id, added_at],
+                                "movie_added"
+                            )
+
+                    # add an entry in movie_watches if not already there
+                    _add_or_ignore_to_table(conn,
+                        "user_id, movie_id, started, stopped, pause_duration",
+                        [movie["user_id"], movie_id, movie["started"], movie["stopped"], movie["paused_counter"]],
+                        "movie_watches"
+                    )
 
 
 def init_db():
@@ -229,6 +341,7 @@ def init_db():
             CREATE TABLE IF NOT EXISTS shows (
                 show_id INTEGER PRIMARY KEY,
                 show_name TEXT,
+                year INTEGER,
                 rating_key INTEGER NOT NULL UNIQUE,
                 tvdb_id INTEGER UNIQUE
             );
@@ -239,9 +352,16 @@ def init_db():
                 season_id INTEGER PRIMARY KEY,
                 show_id INTEGER NOT NULL REFERENCES shows(show_id),
                 season_num INTEGER NOT NULL,
-                episode_count INTEGER NOT NULL,
-                added_at INTEGER NOT NULL,
-                rating_key INTEGER UNIQUE NOT NULL
+                episode_count INTEGER,
+                rating_key INTEGER UNIQUE NOT NULL,
+                UNIQUE(show_id,season_num,episode_count)
+            );
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS season_added (
+                season_id INTEGER REFERENCES seasons(season_id),
+                added_at INTEGER NOT NULL
             );
         """)
 
@@ -249,9 +369,11 @@ def init_db():
             CREATE TABLE IF NOT EXISTS episodes (
                 episode_id INTEGER PRIMARY KEY,
                 season_id INTEGER NOT NULL REFERENCES seasons(season_id),
+                show_id INTEGER NOT NULL,
                 rating_key INTEGER NOT NULL,
                 number INTEGER NOT NULL,
-                name TEXT NOT NULL
+                name TEXT NOT NULL,
+                UNIQUE(season_id, number, name)
             );
         """)
 
@@ -275,7 +397,8 @@ def init_db():
                 started INTEGER NOT NULL,
                 stopped INTEGER NOT NULL,
                 pause_duration INTEGER NOT NULL,
-                CHECK (started < stopped)
+                CHECK (started < stopped),
+                UNIQUE(user_id, episode_id, started, stopped, pause_duration)
             );
         """)
 
@@ -291,5 +414,46 @@ def init_db():
                 last_seen_formatted TEXT,
                 last_seen_date TEXT,
                 last_watched TEXT
+            );
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS movies (
+                movie_id INTEGER PRIMARY KEY,
+                movie_name INTEGER,
+                year INTEGER,
+                rating_key INTEGER UNIQUE,
+                tmdb_id INTEGER UNIQUE
+            );
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS movie_added (
+                movie_id INTEGER REFERENCES movies(movie_id),
+                added_at INTEGER NOT NULL
+            );
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS movie_requests (
+                request_id INTEGER PRIMARY KEY,
+                movie_id INTEGER NOT NULL REFERENCES movies(movie_id),
+                requested_at INTEGER NOT NULL,
+                status INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL,
+                user_id INTEGER NOT NULL REFERENCES users(user_id)
+            );
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS movie_watches (
+                watch_id INTEGER PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users(user_id),
+                movie_id INTEGER NOT NULL REFERENCES movies(movie_id),
+                started INTEGER NOT NULL,
+                stopped INTEGER NOT NULL,
+                pause_duration INTEGER NOT NULL,
+                CHECK (started < stopped),
+                UNIQUE(user_id, movie_id, started, stopped, pause_duration)
             );
         """)

@@ -52,6 +52,7 @@ def getFromAPI(cmd, args=None):
                 params[k] = v
 
     try:
+        print(f"url={api_url}, params={params}")
         data = apiGet(url=api_url, params=params)
         
         if data:
@@ -182,3 +183,21 @@ def get_episode_watch_history(user_id):
     
     if history.get("data") and history["data"].get("data"):
         return history["data"]["data"]
+
+def get_movie_watch_history(user_id):
+    history = getFromAPI("get_history", [{"user_id": user_id}, {"media_type": "movie"}, {"length": 9999999}])
+
+    if history.get("data") and history["data"].get("data"):
+        return history["data"]["data"]
+
+def get_library_media_info(rating_key):
+    seasons = getFromAPI("get_library_media_info", [{"rating_key": rating_key}])
+
+    if seasons.get("data") and seasons["data"].get("data"):
+        return seasons["data"]["data"]
+
+def get_metadata(rating_key):
+    metadata = getFromAPI("get_metadata", [{"rating_key": rating_key}])
+
+    if metadata and metadata.get("data"):
+        return metadata["data"]
