@@ -2,4 +2,4 @@
 .api_cache
 docker-compose.yml
 Dockerfile
-
+.db
