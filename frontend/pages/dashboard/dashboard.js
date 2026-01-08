@@ -1,5 +1,5 @@
 
-// # -----------------------------contactarr------------------------------
+// -----------------------------contactarr------------------------------
 // This file is part of contactarr
 // Copyright (C) 2025 goggybox https://github.com/goggybox
 
@@ -211,7 +211,7 @@ function displayUsers(users) {
         userContainer.appendChild(userRight);
         // p last seen
         const lastSeen = document.createElement("p");
-        lastSeen.textContent = user['last_seen'] === "" ? "" : `Seen ${user['last_seen']}`;
+        lastSeen.textContent = user['last_seen_formatted'] === "" ? "" : `Seen ${user['last_seen_formatted']}`;
         lastSeen.classList.add("last-seen");
         userRight.appendChild(lastSeen);
         // last-seen

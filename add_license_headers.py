@@ -25,7 +25,7 @@ import os
 PROJECT_NAME = "contactarr"
 AUTHOR_LINK = "goggybox https://github.com/goggybox"
 LICENSE_TEXT = f"""
-# -----------------------------contactarr------------------------------
+-----------------------------contactarr------------------------------
 This file is part of {PROJECT_NAME}
 Copyright (C) 2025 {AUTHOR_LINK}
 

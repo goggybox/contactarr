@@ -87,109 +87,98 @@ def set_url(val: str):
     return config.set_config_value("TAUTULLI_API_URL", val)
 
 def get_users():
+    # get the first 5 attributes from the /get_users endpoint
     users = getFromAPI("get_users")
-    user_array = users['data']
-    fields_to_keep = {"user_id","username","friendly_name","email","is_active","is_home_user"}
+    if not users or not users['data']:
+        return
 
-    # filter each user to keep only the "fields_to_keep"
-    intermed = [
+    user_array = users['data']
+    fields_to_keep = {"user_id", "username", "friendly_name", "email", "is_active"}
+    filtered_users = [
         {k: v for k, v in u.items() if k in fields_to_keep}
         for u in user_array
     ]
 
     # filter array to remove Local user or user_id 0
-    filtered_array = [u for u in intermed if u['user_id'] != 0 and u['username'] != "Local"]
+    filtered_users = [u for u in filtered_users if u['user_id'] != 0 and u['username'] != "Local"]
 
-    # get more data for each user
-    for u in filtered_array:
-        u['last_played'] = ""
-        u['last_seen'] = ""
-        u['last_seen_unix'] = None
+    # get the remaining attributes from the /get_history endpoint
+    for u in filtered_users:
+        u['total_duration'] = ""
+        u['last_seen_unix'] = ""
+        u['last_seen_formatted'] = ""
+        u['last_seen_date'] = ""
+        u['last_watched'] = ""
 
-        user = getFromAPI("get_history", [{"user_id": int(u['user_id'])}])
-        if user and len(user['data']['data']) > 0:
-            most_recent = user['data']['data'][0]
-
-            # for TV shows:
-            #   - media_type: 'episode'
-            #   - full_title: 'BoJack Horseman - Nice While It Lasted'
-            #   - parent_title: 'Season 6'
-            #   - media_index: 16 (episode number)
-            # for movies:
-            #   - media_type: 'movie'
-            #   - full_title: 'Sister Act'
-
-            # determine whether the most_recent watched was a Movie or Show
-            media_type = most_recent['media_type']
-            title = most_recent['full_title']
-            if media_type != 'movie':
-                # add e.g. S06E13 for tv show episode
-                season = most_recent['parent_title'].split()[1]
-                season = "0"+season if len(season) == 1 else season
-                episode = str(most_recent['media_index'])
-                episode = "0"+episode if len(episode) == 1 else episode
-                tmp = f"(S{season}E{episode}) -"
-                title = title.split("-")
-                title.insert(1, tmp)
-                title = "".join(title)
-
-            # get date and time watch ended
-            ended_unix = most_recent['stopped']
-            dt = datetime.fromtimestamp(ended_unix)
+        user = getFromAPI("get_history", [{"user_id": int(u['user_id'])}, {"order_column": "stopped"}, {"order_dir": "desc"}, {"length": 1}])
+        if user:
+            # total duration
+            if user['data']['total_duration']:
+                u['total_duration'] = user['data']['total_duration']
             
-            # format date
-            now = datetime.now()
-            diff = now - dt
+            # last_seen and last_watched
+            if user['data']['data'] and len(user['data']['data']) > 0:
+                most_recent = user['data']['data'][0]
+                # if it is a tv show:
+                #   - media_type: 'episode'
+                #   - full_title: 'BoJack Horseman - Nice While It Lasted'
+                #   - parent_title: 'Season 6'
+                #   - media_index: 16 (episode number)
+                # if it is a movie:
+                #   - media_type: 'movie'
+                #   - full_title: 'Sister Act'
+                media_type = most_recent['media_type']
+                title = most_recent['full_title']
+                if media_type != 'movie':
+                    # add e.g. S06E16 for tv show episode
+                    season = most_recent['parent_title'].split()[1]
+                    season = "0"+season if len(season) == 1 else season
+                    episode = str(most_recent['media_index'])
+                    episode = "0"+episode if len(episode) == 1 else episode
+                    tmp = f"(S{season}E{episode}) -"
+                    title = title.split("-")
+                    title.insert(1, tmp)
+                    title = "".join(title)
 
-            seconds = int(diff.total_seconds())
-            intervals = [
-                ("year", 31536000),
-                ("month", 2592000),
-                ("week", 604800),
-                ("day", 86400),
-                ("hour", 3600),
-                ("minute", 60)
-            ]
+                # add data to user
+                u['last_watched'] = title
+                u['last_seen_unix'] = most_recent['stopped']
 
-            if seconds < 60:
-                formatted_dt = "just now"
-            
-            for name, unit_seconds in intervals:
-                value = seconds // unit_seconds
-                if value >= 1:
-                    formatted_dt = f"{value} {name}{'s' if value != 1 else ''} ago"
-                    break
-            
-            u['last_played'] = title
-            u['last_seen'] = formatted_dt
-            u['last_seen_date'] = dt.strftime("%H:%M, %a %d %b")
-            u['last_seen_unix'] = ended_unix
+                # last_seen_formatted and last_seen_date
+                dt = datetime.fromtimestamp(most_recent['stopped'])
+                # format date
+                now = datetime.now()
+                diff = now - dt
+                seconds = int(diff.total_seconds())
+                intervals = [
+                    ("year", 31536000),
+                    ("month", 2592000),
+                    ("week", 604800),
+                    ("day", 86400),
+                    ("hour", 3600),
+                    ("minute", 60)
+                ]
+                if seconds < 60:
+                    formatted_dt = "just now"
+                for name, unit_seconds in intervals:
+                    value = seconds // unit_seconds
+                    if value >= 1:
+                        formatted_dt = f"{value} {name}{'s' if value != 1 else ''} ago"
+                        break
 
-    # order the list by last_seen
-    filtered_array = sorted(
-        filtered_array,
+                u['last_seen_formatted'] = formatted_dt
+                u['last_seen_date'] = dt.strftime("%H:%M, %a %d %b")
+    
+    filtered_users = sorted(
+        filtered_users,
         key = lambda u: u.get("last_seen_unix") or 0,
         reverse=True
     )
 
-    print("="*142)
-    id_space = 10
-    space = 20
-    is_active_space = 9
-    is_home_user_space = 12
-    print("ID"+(" "*8)+"| USERNAME"+(" "*12)+"| NAME"+(" "*16)+"| EMAIL"+(" "*15)+"| IS_ACTIVE"+" |"+" IS_HOME_USER" +" |"+" LAST SEEN          " + "|" + " LAST PLAYED         ")
+    return filtered_users
 
-    for u in filtered_array:
-        print(type(u['last_seen']))
-    #     id = str(u['user_id'])+(" "*(id_space - len(str(u['user_id']))))+"| "
-    #     username = u['username'][:space]+(" "*(space - len(u['username'])))+"| "
-    #     name = u['friendly_name'][:space]+(" "*(space - len(u['friendly_name'])))+"| "
-    #     email = u['email'] or ""
-    #     email = email[:space]+(" "*(space - len(email)))+"| "
-    #     is_active = str(u['is_active'])+(" "*(is_active_space))+"| "
-    #     is_home_user = str(u['is_home_user'])+(" "*(is_home_user_space))+"| "
-    #     last_seen = str(u['last_seen'])+(" "*(space - len(str(u['last_seen']))))+"| "
-    #     last_played = (u['last_played']+(" "*(space - len(u['last_played'])))) if u['last_played'] else ""
-    #     print(id+username+name+email+is_active+is_home_user+last_seen+last_played)
-
-    return filtered_array
+def get_episode_watch_history(user_id):
+    history = getFromAPI("get_history", [{"user_id": user_id}, {"media_type": "episode"}, {"length": 9999999}])
+    
+    if history.get("data") and history["data"].get("data"):
+        return history["data"]["data"]

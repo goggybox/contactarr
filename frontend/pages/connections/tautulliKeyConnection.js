@@ -1,5 +1,5 @@
 
-// # -----------------------------contactarr------------------------------
+// -----------------------------contactarr------------------------------
 // This file is part of contactarr
 // Copyright (C) 2025 goggybox https://github.com/goggybox
 
@@ -26,12 +26,14 @@ async function initTautulliAPIInputBox() {
     // tautulli api key
     const inp = document.getElementById("tautulli-connection-input-box");
     let res = await fetch("/backend/tautulli/apikey");
+    await fetch("/backend/populate_shows");
     tautulli_key = await res.text();
     inp.value = tautulli_key;
     inp.addEventListener('input', tautulliAPIKeyListener);
 }
 
 async function tautulliConnectionSave() {
+    // button to save the API Key
     const inp = document.getElementById("tautulli-connection-input-box");
     const val = inp.value;
     const res = await fetch("/backend/tautulli/set_apikey", {
@@ -46,6 +48,8 @@ async function tautulliConnectionSave() {
         tautulli_key = val;
         hideSaveAndCancelButtons();
         showNotification("Tautulli API Key Saved");
+        // will lead to a refresh of user data
+        await fetch("/backend/link_tautulli");
     }
 }
 

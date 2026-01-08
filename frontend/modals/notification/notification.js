@@ -1,5 +1,5 @@
 
-// # -----------------------------contactarr------------------------------
+// -----------------------------contactarr------------------------------
 // This file is part of contactarr
 // Copyright (C) 2025 goggybox https://github.com/goggybox
 

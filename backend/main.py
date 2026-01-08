@@ -23,7 +23,8 @@
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from backend.routes.tautulli import router as tautulli_router
+# from backend.routes.tautulli import router as tautulli_router
+from backend.routes.db import router as db_router
 from dotenv import load_dotenv
 import os
 
@@ -32,7 +33,8 @@ app = FastAPI()
 load_dotenv('.env')
 
 # API routes
-app.include_router(tautulli_router, prefix="/backend/tautulli")
+# app.include_router(tautulli_router, prefix="/backend/tautulli")
+app.include_router(db_router, prefix="/backend")
 
 # front-end routes
 @app.get("/")
