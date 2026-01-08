@@ -80,6 +80,13 @@ def get_tautulli_config():
         'api_url': get_config_value('TAUTULLI_API_URL'),
     }
 
+def get_overseerr_config():
+    """get fresh Overseerr configuration"""
+    return {
+        'api_key': get_config_value('OVERSEERR_API_KEY'),
+        'api_url': get_config_value('OVERSEERR_API_URL')
+    }
+
 def get_tvdb_config():
     """get fresh TVdb configuration"""
     return {

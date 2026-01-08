@@ -23,6 +23,7 @@
 from pydantic import BaseModel
 from fastapi import APIRouter
 from backend.api import tautulli
+from backend.api import overseerr
 from backend.db import db
 from fastapi.responses import PlainTextResponse
 
@@ -36,33 +37,56 @@ class APIModel(BaseModel):
 # ---------------------------------------- #
 
 @router.get("/tautulli/apikey")
-def apikey():
+def tau_apikey():
     return PlainTextResponse(tautulli.apikey())
 
 @router.post("/tautulli/set_apikey")
-def set_apikey(data: APIModel):
+def tau_set_apikey(data: APIModel):
     return tautulli.set_apikey(data.key)
 
 @router.get("/tautulli/url")
-def url():
+def tau_url():
     return PlainTextResponse(tautulli.url())
 
 @router.post("/tautulli/set_url")
-def set_url(data: APIModel):
+def tau_set_url(data: APIModel):
     return tautulli.set_url(data.key)
 
 @router.get("/tautulli/alive")
-def alive():
+def tau_alive():
     return tautulli.alive()
 
 @router.get("/tautulli/get_users")
-def get_users():
+def tau_get_users():
     return tautulli.get_users()
 
 # ---------------------------------------- #
 #                OVERSEERR                 #
 # ---------------------------------------- #
 
+@router.get("/overseerr/apikey")
+def ove_apikey():
+    return PlainTextResponse(overseerr.apikey())
+
+@router.post("/overseerr/set_apikey")
+def ove_set_apikey(data: APIModel):
+    return overseerr.set_apikey(data.key)
+
+@router.get("/overseerr/url")
+def ove_url():
+    return PlainTextResponse(overseerr.url())
+
+@router.post("/overseerr/set_url")
+def ove_set_url(data: APIModel):
+    return overseerr.set_url(data.key)
+
+@router.get("/overseerr/alive")
+def ove_alive():
+    return overseerr.alive()
+
+@router.get("/overseerr/get_requests")
+def ove_get_requests():
+    return overseerr.get_requests()
 
 # ---------------------------------------- #
 #                  OTHER                   #

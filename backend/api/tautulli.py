@@ -52,7 +52,6 @@ def getFromAPI(cmd, args=None):
                 params[k] = v
 
     try:
-        print(f"url={api_url}, params={params}")
         data = apiGet(url=api_url, params=params)
         
         if data:
