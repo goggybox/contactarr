@@ -76,6 +76,10 @@ def populate_users_table():
 def populate_shows():
     return db.populate_shows()
 
+@router.get("/populate_movies")
+def populate_movies():
+    return db.populate_movies()
+
 @router.get("/link_tautulli")
 def link_tautulli():
     return db.link_tautulli()
