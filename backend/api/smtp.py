@@ -22,6 +22,9 @@
 
 import os
 import requests
+import re
+import smtplib
+from email.message import EmailMessage
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from backend.api.cache import apiGet, clearCache
@@ -55,3 +58,50 @@ def password():
 
 def set_pass(val: str):
     return config.set_config_value("SMTP_PASS", val)
+
+def validate_recipient_string(rec_str):
+    regex = r'^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w+$'
+
+    # split recipients if given as list (separated by commas)
+    recipients = rec_str.split(",")
+
+    for recipient in recipients:
+        if not re.match(regex, recipient):
+            return False
+
+    return True
+
+def validate_sender(sender):
+    regex = r'^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w+$'
+    return re.match(regex, sender)
+
+def send_test_email(sender, recipient):
+    # validate emails
+    if not validate_recipient_string(recipient):
+        return False
+    if not validate_sender(sender):
+        return False
+
+    # split recipients if given as list (separated by commas)
+    recipients = recipient.split(",")
+    cnf = config.get_smtp_config()
+
+    errors = 0
+    for r in recipients:
+        msg = EmailMessage()
+        msg["Subject"] = "contactarr | Testing Testing 123..."
+        msg["From"] = sender
+        msg["To"] = r
+        msg.set_content("If you are reading this, your contactarr email test was successful!")
+        try:
+            with smtplib.SMTP(cnf['host'], cnf['port']) as smtp:
+                smtp.starttls()
+                smtp.login(cnf['user'], cnf['pass'])
+                smtp.send_message(msg)
+        except Exception as e:
+            errors += 1
+    
+    if errors > 0:
+        return False
+
+    return True

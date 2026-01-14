@@ -42,7 +42,7 @@ function buildTestEmailModal() {
     //         <input class="modal-input" id="test-email-sender-modal-input"/>
     //         <p class="modal-description">Address from which the email will be sent</p>
     //         <p class="modal-input-text">Recipient email address:</p>
-    //         <input class="modal-input" id="test-email-sender-modal-input"/>
+    //         <input class="modal-input" id="test-email-recipient-modal-input"/>
     //         <p class="modal-description">Recipient addresses (separated by commas)</p>
     //       </div>
     //     </div>
@@ -89,8 +89,8 @@ function buildTestEmailModal() {
     const p3 = cr("p", "modal-input-text", null);
     p3.textContent = "Recipient email address:";
     inputGrid.appendChild(p3);
-    //         <input class="modal-input" id="test-email-sender-modal-input"/>
-    const input2 = cr("input", "modal-input", "test-email-sender-modal-input");
+    //         <input class="modal-input" id="test-email-recipient-modal-input"/>
+    const input2 = cr("input", "modal-input", "test-email-recipient-modal-input");
     inputGrid.appendChild(input2);
     //         <p class="modal-description">Recipient addresses (separated by commas)</p>
     const p4 = cr("p", "modal-description", null);
@@ -103,6 +103,7 @@ function buildTestEmailModal() {
     //       <div class="modal-confirm-button" id="test-email-modal-send-button">Send</div>
     const confirm = cr("div", "modal-confirm-button", "test-email-modal-send-button");
     confirm.innerHTML = "Send";
+    confirm.addEventListener("click", sendTestEmail);
     buttons.appendChild(confirm);
     //       <div class="modal-cancel-button" id="test-email-modal-cancel-button">Cancel</div>
     const cancel = cr("div", "modal-cancel-button", "test-email-modal-cancel-button");
@@ -111,6 +112,25 @@ function buildTestEmailModal() {
     buttons.appendChild(cancel);
 
     return container;
+}
+
+async function sendTestEmail() {
+    const senderEl = document.getElementById("test-email-sender-modal-input");
+    const sender = senderEl.value;
+    const recipientEl = document.getElementById("test-email-recipient-modal-input");
+    const recipient = recipientEl.value;
+    res = await fetch("/backend/smtp/send_test_email", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            "sender": sender,
+            "recipient": recipient
+        })
+    });
+    success = await res.json();
+    console.log(success);
 }
 
 function cancelTestEmail() {

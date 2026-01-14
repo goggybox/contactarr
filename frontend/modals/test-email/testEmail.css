@@ -47,6 +47,7 @@ Please keep this header comment in all copies of the program.
     background: var(--primary-background-colour);
     border-radius: var(--secondary-border-radius);
     overflow: hidden;
+    box-shadow: var(--box-shadow);
 }
 
 .modal-title {
@@ -57,7 +58,7 @@ Please keep this header comment in all copies of the program.
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: rgba(0,0,0, 0.2) 0px 7px 29px 0px;
+    box-shadow: var(--box-shadow);
 }
 
 .modal-title h2 {
