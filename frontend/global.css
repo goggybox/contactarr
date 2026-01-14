@@ -69,6 +69,8 @@ html, body {
 
     --box-shadow: rgba(0, 0, 0, 0.2) 0px 7px 29px 0px;
 
+    --user-container-info-background-colour: var(--secondary-text-colour);
+
     /* Titan email colours */
     --titan-email-backdrop-colour: #1B1E23;
     --titan-email-background-colour: #000000;

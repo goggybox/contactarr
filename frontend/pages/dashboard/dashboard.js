@@ -20,6 +20,8 @@
 // Please keep this header comment in all copies of the program.
 // --------------------------------------------------------------------
 
+export let selecting_users = false;
+export let selected_users = [];
 let users;
 let selected_email = "titan";
 
@@ -157,15 +159,77 @@ function displayTautulliError() {
     msgContainer.appendChild(msg);
 }
 
+function clickSelectUsersButton(button) {
+    button.classList.toggle("selecting");
+    button.textContent = button.classList.contains("selecting") ? "Cancel Selection" : "Select Users";
+    const checkboxes = document.getElementsByClassName("user-container-checkbox");
+    for (const checkbox of checkboxes) {
+        checkbox.classList.toggle("hidden");
+    }
+    const selectUsersButtons = document.getElementById("select-users-buttons");
+    selectUsersButtons.classList.toggle("hidden");
+}
+
+function clickUserCheckbox(checkbox) {
+    const username = checkbox.textContent;
+    if (checkbox.checked) {
+        // the checkbox was clicked and is now checked
+        if (!selected_users.includes(username)) { selected_users.push(username); }
+    } else {
+        // the checkbox was clicked and is now unchecked
+        if (selected_users.includes(username)) { selected_users.splice(selected_users.indexOf(username), 1); }
+    }
+
+    updateSelectUsersButtons();
+}
+
+function updateSelectUsersButtons() {
+    const selectAllUsersButton = document.getElementById("select-all-users-button");
+    const deselectAllUsersButton = document.getElementById("deselect-all-users-button");
+    const checkboxes = document.getElementsByClassName("user-container-checkbox");
+    let allSelected = true;
+    let allUnselected = true;
+    for (const checkbox of checkboxes) {
+        if (!checkbox.checked) { allSelected = false; }
+        else { allUnselected = false; }
+    }
+
+    selectAllUsersButton.classList.toggle("selected", allSelected);
+    deselectAllUsersButton.classList.toggle("unselected", allUnselected);
+}
+
+function selectAllUsers() {
+    const checkboxes = document.getElementsByClassName("user-container-checkbox");
+    for (const checkbox of checkboxes) {
+        checkbox.checked = true;
+        clickUserCheckbox(checkbox);
+    }
+
+    console.log(selected_users);
+}
+
+function deselectAllUsers() {
+    const checkboxes = document.getElementsByClassName("user-container-checkbox");
+    for (const checkbox of checkboxes) {
+        checkbox.checked = false;
+        clickUserCheckbox(checkbox);
+    }
+
+    console.log(selected_users);
+}
+
 function displayUsers(users) {
-    // HTML structure for each user container:
+    // HTML structure for each user container:checkboxes.classList.
     // <div class="user-container">
     //     <div class="user-left">
-    //         <div class="user-name">
-    //             <p class="name">Aidan</p>
-    //             <p class="username">(aidanc2030)</p>
+    //         <input type="checkbox" class="user-container-checkbox hidden">
+    //         <div class="user-container-info">
+    //             <div class="user-name">
+    //                 <p class="name">Aidan</p>
+    //                 <p class="username">(aidanc2030)</p>
+    //             </div>
+    //             <p class="email">me@aidan.digital</p>
     //         </div>
-    //         <p class="email">me@aidan.digital</p>
     //     </div>
     //     <div class="user-right">
     //         <p>Last seen:</p>
@@ -174,7 +238,7 @@ function displayUsers(users) {
     // </div>
     const listContainer = document.getElementById("user-list");
     for (const [index, user] of users.entries()) {
-        // user-containeri("titan-cont
+        // user-containeri
         const userContainer = document.createElement("div");
         userContainer.classList.add("user-container");
         listContainer.appendChild(userContainer);
@@ -186,10 +250,21 @@ function displayUsers(users) {
         const userLeft = document.createElement("div");
         userLeft.classList.add("user-left");
         userContainer.appendChild(userLeft);
+        // user-container-checkbox
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.classList.add("user-container-checkbox", "hidden");
+        checkbox.textContent = user["username"];
+        checkbox.addEventListener("click", () => {clickUserCheckbox(checkbox)});
+        userLeft.appendChild(checkbox);
+        // user-container-info
+        const containerInfo = document.createElement("div");
+        containerInfo.classList.add("user-container-info");
+        userLeft.appendChild(containerInfo);
         // user-name
         const userName = document.createElement("div");
         userName.classList.add("user-name");
-        userLeft.appendChild(userName);
+        containerInfo.appendChild(userName);
         // name
         const name = document.createElement("p");
         name.textContent = user['friendly_name'] ?? "-";
@@ -204,7 +279,7 @@ function displayUsers(users) {
         const email = document.createElement("p");
         email.textContent = user['email'] ?? "-";
         email.classList.add("email");
-        userLeft.appendChild(email);
+        containerInfo.appendChild(email);
         // user-right
         const userRight = document.createElement("div");
         userRight.classList.add("user-right");
@@ -221,6 +296,18 @@ function displayUsers(users) {
         userRight.appendChild(lastSeenDate);
 
     }
+
+    // attach checkbox toggle event to Select Users button
+    const button = document.getElementById("titan-select-users-button");
+    button.addEventListener("click", () => {clickSelectUsersButton(button)});
+
+    // attach event to "Select All" users button.
+    const selectAllUsersButton = document.getElementById("select-all-users-button");
+    selectAllUsersButton.addEventListener("click", selectAllUsers);
+
+    // attach event to "Deselect All" users button.
+    const deselectAllUsersButton = document.getElementById("deselect-all-users-button");
+    deselectAllUsersButton.addEventListener("click", deselectAllUsers);
 }
 
 function displayEmail(service) {
@@ -283,7 +370,7 @@ function titanSelected() {
 
 window.onload = async function() {
     // load aray of Tautulli users when dashboard loads
-    res = await fetch ("/backend/tautulli/get_users");
+    let res = await fetch ("/backend/tautulli/get_users");
     
     if (res.status === 200) {
         users = await res.json();

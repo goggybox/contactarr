@@ -55,6 +55,14 @@ Please keep this header comment in all copies of the program.
         <div id="user-list">
           
         </div>
+        <div id="select-users-buttons" class="hidden">
+          <div id="select-all-users-button">
+            <p>Select All</p>
+          </div>
+          <div id="deselect-all-users-button" class="unselected">
+            <p>Deselect All</p>
+          </div>
+        </div>
       </div>
       <div class="email-container" id="email-container">
         <h2>Email</h2>
@@ -69,12 +77,15 @@ Please keep this header comment in all copies of the program.
           </div>
           <p>Enter HTML code to add to the email:</p>
           <textarea id="htmlInput" rows="7"></textarea>
+          <p class="select-users-button" id="titan-select-users-button">
+            Select Users
+          </p>
         </div>
       </div>
     </div>
   </div>
 
   <script src="nav.js"></script>
-  <script src="/pages/dashboard/dashboard.js"></script>
+  <script type="module" src="/pages/dashboard/dashboard.js"></script>
 </body>
 </html>
