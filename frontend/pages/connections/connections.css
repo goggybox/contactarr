@@ -78,7 +78,7 @@ Please keep this header comment in all copies of the program.
     margin-left: 7px;
     padding: 6px 10px 6px 10px;
     font-size: 1em;
-    border-radius: 13px;
+    border-radius: var(--primary-border-radius);
     background: var(--secondary-accent-colour);
     color: var(--secondary-background-colour);
     border: 2px solid var(--secondary-background-colour);
@@ -107,7 +107,7 @@ Please keep this header comment in all copies of the program.
     margin-left: 7px;
     padding: 6px 10px 6px 10px;
     font-size: 1em;
-    border-radius: 13px;
+    border-radius: var(--primary-border-radius);
     background: var(--primary-cancel-button-background-colour);
     border: 2px solid var(--secondary-background-colour);
     user-select: none;
@@ -124,7 +124,7 @@ Please keep this header comment in all copies of the program.
     margin-left: 7px;
     padding: 6px 10px 6px 10px;
     font-size: 1em;
-    border-radius: 13px;
+    border-radius: var(--primary-border-radius);
     background: var(--secondary-accent-colour);
     color: var(--secondary-background-colour);
     border: 2px solid var(--secondary-background-colour);

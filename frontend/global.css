@@ -50,10 +50,11 @@ html, body {
     --primary-background-highlighted-colour: #403b30;
     --primary-background-secondary-highlighted-colour: #332f26;
     --secondary-background-colour: #1f1d17;
-    --secondary-background-highlighted-colour: #2b2821;
+    --secondary-background-highlighted-colour: #29261e;
     --primary-accent-colour: #ffb224;
     --secondary-accent-colour: #cf911e;
     --primary-input-box-colour: #595243;
+    --primary-input-box-highlighted-colour: #6a6150;
 
     --primary-cancel-button-background-colour: #474336;
     --secondary-cancel-button-background-colour: #595243;
@@ -78,4 +79,7 @@ html, body {
     --titan-email-primary-text-colour: white;
     --titan-email-secondary-text-colour: #BFBFBF;
     --titan-email-footer-border: #555a61;
+
+    --primary-border-radius: 12px;
+    --secondary-border-radius: 20px;
 }
