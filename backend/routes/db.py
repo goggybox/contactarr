@@ -39,6 +39,10 @@ class SMTPAllModel(BaseModel):
     user: str
     password: str
 
+class SMTPSenderRecipientModel(BaseModel):
+    sender: str
+    recipient: str
+
 # ---------------------------------------- #
 #                 TAUTULLI                 #
 # ---------------------------------------- #
@@ -104,7 +108,7 @@ def smtp_host():
     return smtp.host()
 
 @router.post("/smtp/set_host")
-def smtp_set_host(datA: APIModel):
+def smtp_set_host(data: APIModel):
     return smtp.set_host(data.key)
 
 @router.get("/smtp/port")
@@ -142,6 +146,18 @@ def smtp_set_all(data: SMTPAllModel):
         "password": smtp.set_pass(data.password),
     }
     return results
+
+@router.post("/smtp/validate_sender")
+def smtp_validate_sender(data: APIModel):
+    return smtp.validate_sender(data.key)
+
+@router.post("/smtp/validate_recipient")
+def smtp_validate_recipient(data: APIModel):
+    return smtp.validate_recipient_string(data.key)
+
+@router.post("/smtp/send_test_email")
+def smtp_send_email(data: SMTPSenderRecipientModel):
+    return smtp.send_test_email(data.sender, data.recipient)
 
 # ---------------------------------------- #
 #                  OTHER                   #
