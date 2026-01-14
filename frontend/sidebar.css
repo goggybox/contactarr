@@ -67,7 +67,7 @@ nav li {
     margin: 0px 10px 20px 10px;
     text-align: center;
     background-color: var(--secondary-background-highlighted-colour);
-    border-radius: 12px;
+    border-radius: var(--primary-border-radius);
     transition: background-color 300ms ease, box-shadow 300ms ease
 }
 

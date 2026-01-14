@@ -33,6 +33,7 @@ Please keep this header comment in all copies of the program.
   <link rel="stylesheet" href="global.css">
   <link rel="stylesheet" href="/pages/connections/connections.css">
   <link rel="stylesheet" href="/modals/notification/notification.css">
+  <link rel="stylesheet" href="/modals/test-email/testEmail.css">
   <link rel="icon" href="contactarr.png">
 </head>
 <body>
@@ -47,8 +48,12 @@ Please keep this header comment in all copies of the program.
       </ul>
     </nav>  
   </div>
+  <div id="modal-window" class="hidden">
+    <!-- modals will be dynamically added here... -->
+  </div>
   <div id="notification-container">
-    <!-- ... -->
+    <!-- notification modals will be dynamically added here... -->
+    <!--     (modals that will not cover the full screen)      -->
   </div>
 
   <div class="content-wrapper">
@@ -96,6 +101,7 @@ Please keep this header comment in all copies of the program.
             <div class="connection-input-box-container">
               <input class="connection-input-box" id="smtp-host-input-box"/>
               <div class="connection-action-wrapper">
+                <div class="connection-test" id="smtp-connection-test" onclick="showTestEmailModal()">Test</div>
                 <div class="connection-buttons hide" id="smtp-connection-buttons">
                   <div class="connection-save" id="smtp-connection-save" onclick="smtpConnectionSave()">Save</div>
                   <div class="connection-cancel" id="smtp-connection-cancel" onclick="smtpConnectionCancel()">Cancel</div>
@@ -118,7 +124,6 @@ Please keep this header comment in all copies of the program.
           </div>
         </div>
        </div>
-
     </div>
   </div>
 
@@ -128,5 +133,6 @@ Please keep this header comment in all copies of the program.
   <script src="/pages/connections/tautulliURLConnection.js"></script>
   <script src="/pages/connections/smtpConnection.js"></script>
   <script src="/modals/notification/notification.js"></script>
+  <script src="/modals/test-email/testEmail.js"></script>
 </body>
 </html>

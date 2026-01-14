@@ -1,0 +1,148 @@
+/* 
+
+-----------------------------contactarr------------------------------
+This file is part of contactarr
+Copyright (C) 2025 goggybox https://github.com/goggybox
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+that this program is licensed under. See LICENSE file. If not
+available, see <https://www.gnu.org/licenses/>.
+
+Please keep this header comment in all copies of the program.
+--------------------------------------------------------------------
+
+*/
+
+#modal-window {
+    position:fixed;
+    left:0;
+    right:0;
+    top:0;
+    bottom:0;
+    background: rgba(0,0,0,0.5);
+    z-index: 9999999;
+}
+
+#modal-window.hidden {
+    display: none;
+}
+
+.modal-container {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    width: 1000px;
+    transform: translateX(-50%) translateY(-50%);
+    border: 3px solid var(--secondary-background-colour);
+    background: var(--primary-background-colour);
+    border-radius: var(--secondary-border-radius);
+    overflow: hidden;
+}
+
+.modal-title {
+    height: 70px;
+    background: var(--secondary-background-colour);
+    user-select: none;
+    font-size: 1.4em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: rgba(0,0,0, 0.2) 0px 7px 29px 0px;
+}
+
+.modal-title h2 {
+    margin-top: -5px;
+}
+
+.modal-content {
+    padding: 25px;
+    font-size: 1.2em;
+}
+
+.modal-inputs-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin-top: 20px;
+}
+
+.modal-input-grid {
+    width: 60%;
+    display: grid;
+    grid-template-columns: max-content 1fr auto;
+    column-gap: 10px;
+    row-gap: 10px;
+    align-items: center;
+}
+
+.modal-input-text {
+    grid-column: 1;
+    justify-self: end;
+    font-weight: 600;
+}
+
+.modal-description {
+    grid-column: 2;
+    margin-top: -10px;
+    margin-bottom: 5px;
+    font-style: italic;
+    color: var(--secondary-text-colour);
+    font-size: 0.85em;
+}
+
+.modal-input {
+    grid-column: 2;
+    width: 100%;
+    background: var(--primary-input-box-colour);
+    color: var(--primary-text-colour);
+    outline: none;
+    border: 2px solid var(--secondary-background-colour);
+    padding: 6px 10px 6px 10px;
+    font-size: 1em;
+    z-index: 3;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 15px;
+}
+
+.modal-confirm-button {
+    padding: 10px 15px;
+    border-radius: var(--primary-border-radius);
+    box-shadow: var(--box-shadow);
+    background: var(--primary-cancel-button-background-colour);
+    border: 2px solid var(--secondary-background-colour);
+    cursor: pointer;
+    user-select: none;
+}
+
+.modal-confirm-button:hover {
+    background: var(--secondary-cancel-button-background-colour);
+}
+
+.modal-cancel-button {
+    padding: 10px 15px;
+    border-radius: var(--primary-border-radius);
+    box-shadow: var(--box-shadow);
+    background: var(--secondary-accent-colour);
+    color: var(--secondary-background-colour);
+    border: 2px solid var(--secondary-background-colour);
+    cursor: pointer;
+    user-select: none;
+}
+
+.modal-cancel-button:hover {
+    background: var(--primary-accent-colour);
+}

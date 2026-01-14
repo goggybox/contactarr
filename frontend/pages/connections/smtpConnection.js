@@ -95,12 +95,16 @@
 
     function smtpHideSaveAndCancelButtons() {
         const btns = document.getElementById("smtp-connection-buttons");
+        const test = document.getElementById("smtp-connection-test");
         btns.classList.add("hide");
+        test.classList.remove("hide");
     }
 
     function smtpShowSaveAndCancelButtons() {
         const btns = document.getElementById("smtp-connection-buttons");
+        const test = document.getElementById("smtp-connection-test");
         btns.classList.remove("hide");
+        test.classList.add("hide");
     }
 
     function smtpListener() {
@@ -115,4 +119,8 @@
         } else {
             smtpShowSaveAndCancelButtons();
         }
+    }
+    
+    function smtpConnectionTest() {
+        
     }
