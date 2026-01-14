@@ -29,9 +29,36 @@ Please keep this header comment in all copies of the program.
     min-height: 0px;
 }
 
+#select-users-buttons {
+    display: flex;
+    gap: 5px;
+}
+
+#select-users-buttons.hidden {
+    display: none;
+}
+
+#select-all-users-button, #deselect-all-users-button {
+    cursor: pointer;
+    user-select: none;
+    width: fit-content;
+    margin-top: 10px;
+    padding: 5px 10px;
+    background: var(--secondary-accent-colour);
+    border: 3px solid var(--secondary-background-colour);
+    border-top: 0px;
+    color: var(--primary-text-colour);
+    font-weight: 600;
+}
+
+#select-all-users-button.selected, #deselect-all-users-button.unselected {
+    background: var(--primary-input-box-colour);
+    cursor: auto;
+}
+
 .user-list-container {
     width: 450px;
-    max-height: 950px;
+    max-height: 1050px;
 }
 
 .user-list-container h2 {
@@ -51,7 +78,6 @@ Please keep this header comment in all copies of the program.
     padding: 10px;
     border-bottom: 1px solid var(--tertiary-text-colour);
     user-select: none;
-    cursor: pointer;
 }
 
 .user-container#last {
@@ -60,13 +86,69 @@ Please keep this header comment in all copies of the program.
 
 .user-container:hover {
     background-color: rgba(0,0,0,0.1);
+    --user-container-info-background-colour: #504A3C;
 }
 
 .user-left {
-    width: 275px;
-    flex: 0 0 auto;
+    display: flex;
+    flex: 1;
+    min-width: 0;
+}
+
+input[type="checkbox"] {
+    appearance: none;
+    background-color: var(--primary-text-colour);
+    margin-right: 10px;
+    color: rgba(0,0,0,0);
+    width: 1.5em;
+    height: 1.5em;
+    border: 0.15em solid inherit;
+    border-radius: 0.15em;
+    display: grid;
+    place-content: center;
+}
+
+input[type="checkbox"]:hover {
+    cursor: pointer;
+}
+
+input[type="checkbox"].hidden {
+    display: none;
+}
+
+input[type="checkbox"]:checked {
+    background-color: var(--primary-accent-colour);
+}
+
+.user-container-info {
+    flex: 1;
     overflow-x: auto;
     scrollbar-width: thin;
+}
+
+/* 
+Source - https://stackoverflow.com/a
+Posted by RWAM, modified by community. See post 'Timeline' for change history
+Retrieved 2026-01-13, License - CC BY-SA 4.0
+
+MODIFIED TO APPLY TO HORIZONTAL EDGES
+*/
+.user-container-info {
+  background:
+    /* Shadow covers */
+    linear-gradient(90deg, var(--user-container-info-background-colour) 30%, rgba(255, 255, 255, 0)),
+    linear-gradient(270deg, var(--user-container-info-background-colour) 30%, rgba(255,255,255,0)) 100% 0,
+
+    /* Shadows */
+    radial-gradient(farthest-side at 0 50%, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0)),
+    radial-gradient(farthest-side at 100% 50%, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0)) 100% 0;
+  background-repeat: no-repeat;
+  background-color: var(--user-container-info-background-colour);
+
+  background-size: 40px 100%, 40px 100%, 14px 100%, 14px 100%;
+
+  /* Opera doesn't support this in the shorthand */
+  background-attachment: local, local, scroll, scroll;
 }
 
 .user-name {
@@ -104,6 +186,8 @@ Please keep this header comment in all copies of the program.
     align-items: right;
     justify-content: right;
     font-size: 1.1em;
+    flex-shrink: 0;
+    width: fit-content;
 }
 
 .user-right * {
@@ -140,7 +224,7 @@ Please keep this header comment in all copies of the program.
 }
 
 #embed-container {
-    height: 600px;
+    height: 550px;
     background: var(--titan-email-backdrop-colour);
     border: 3px solid var(--secondary-background-colour);
     margin: 10px;
@@ -166,6 +250,22 @@ Please keep this header comment in all copies of the program.
     padding: 5px;
     border: 3px solid var(--secondary-background-colour);
     color: var(--tertiary-text-colour);
+}
+
+.select-users-button {
+    user-select: none;
+    cursor: pointer;
+    margin-top: 10px;
+    background: var(--primary-input-box-colour);
+    border: 3px solid var(--secondary-background-colour);
+    color: var(--primary-text-colour);
+    width: fit-content;
+    padding: 5px 10px;
+    font-weight: 600;
+}
+
+.select-users-button.selecting {
+    background: var(--secondary-accent-colour);
 }
 
 .tautulli-error-message-container {
