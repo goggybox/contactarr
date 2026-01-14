@@ -87,6 +87,15 @@ def get_overseerr_config():
         'api_url': get_config_value('OVERSEERR_API_URL')
     }
 
+def get_smtp_config():
+    """get SMTP configuration"""
+    return {
+        'host': get_config_value('SMTP_HOST'),
+        'port': get_config_value('SMTP_PORT'),
+        'user': get_config_value('SMTP_USER'),
+        'pass': get_config_value('SMTP_PASS')
+    }
+
 def get_tvdb_config():
     """get fresh TVdb configuration"""
     return {

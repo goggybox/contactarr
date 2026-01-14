@@ -24,6 +24,7 @@ from pydantic import BaseModel
 from fastapi import APIRouter
 from backend.api import tautulli
 from backend.api import overseerr
+from backend.api import smtp
 from backend.db import db
 from fastapi.responses import PlainTextResponse
 
@@ -31,6 +32,12 @@ router = APIRouter()
 
 class APIModel(BaseModel):
     key: str
+
+class SMTPAllModel(BaseModel):
+    host: str
+    port: str
+    user: str
+    password: str
 
 # ---------------------------------------- #
 #                 TAUTULLI                 #
@@ -87,6 +94,54 @@ def ove_alive():
 @router.get("/overseerr/get_requests")
 def ove_get_requests():
     return overseerr.get_requests()
+
+# ---------------------------------------- #
+#                   SMTP                   #
+# ---------------------------------------- #
+
+@router.get("/smtp/host")
+def smtp_host():
+    return smtp.host()
+
+@router.post("/smtp/set_host")
+def smtp_set_host(datA: APIModel):
+    return smtp.set_host(data.key)
+
+@router.get("/smtp/port")
+def smtp_port():
+    test = smtp.port()
+    print(test)
+    return test
+
+@router.post("/smtp/set_port")
+def smtp_set_port(data: APIModel):
+    return smtp.set_port(data.key)
+
+@router.get("/smtp/user")
+def smtp_user():
+    return smtp.user()
+
+@router.post("/smtp/set_user")
+def smtp_set_user(data: APIModel):
+    return smtp.set_user(data.key)
+
+@router.get("/smtp/pass")
+def smtp_pass():
+    return smtp.password()
+
+@router.post("/smtp/set_pass")
+def smtp_set_pass(data: APIModel):
+    return smtp.set_pass(data.key)
+
+@router.post("/smtp/set_all")
+def smtp_set_all(data: SMTPAllModel):
+    results = {
+        "host": smtp.set_host(data.host),
+        "port": smtp.set_port(data.port),
+        "user": smtp.set_user(data.user),
+        "password": smtp.set_pass(data.password),
+    }
+    return results
 
 # ---------------------------------------- #
 #                  OTHER                   #

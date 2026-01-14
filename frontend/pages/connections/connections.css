@@ -32,21 +32,25 @@ Please keep this header comment in all copies of the program.
 .connection {
     display: grid;
     padding: 0px 5px 0px 5px;
-    grid-template-columns: 70px 1fr auto;
+    grid-template-columns: max-content 1fr auto;
     column-gap: 10px;
+    row-gap: 10px;
     margin-bottom: 15px;
 }
 
+.smtp {
+    margin-top: 30px;
+}
+
 .connection-text {
-    grid-row: 1;
     grid-column: 1;
     align-self: center;
+    justify-self: end;
     font-weight: 600;
     font-size: 1.1em;
 }
 
 .connection-input-box-container {
-    grid-row: 1;
     grid-column: 2;
     max-width: 700px;
     display: flex;
@@ -145,8 +149,9 @@ Please keep this header comment in all copies of the program.
 }
 
 .connection-description {
-    grid-row: 2;
     grid-column: 2;
+    margin-top: -10px;
+    margin-bottom: 5px;
     font-style: italic;
     color: var(--secondary-text-colour);
     padding-left: 5px;

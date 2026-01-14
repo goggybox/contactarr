@@ -72,9 +72,6 @@ Please keep this header comment in all copies of the program.
               </div>
             </div>
             <div class="connection-description">Enter the API key to connect to your Tautulli instance</div>
-          </div>
-
-          <div class="connection" id="tautulli-connection2">
             <div class="connection-text" id="tautulli-connection2-text">API URL</div>
             <div class="connection-input-box-container">
               <input class="connection-input-box" id="tautulli-connection2-input-box"/>
@@ -90,6 +87,38 @@ Please keep this header comment in all copies of the program.
         </div>
       </div>
 
+      <!-- SMTP CONNECTION -->
+       <div class="smtp">
+        <h3>SMTP</h3>
+        <div class="connections-container">
+          <div class="connection">
+            <div class="connection-text">Host</div>
+            <div class="connection-input-box-container">
+              <input class="connection-input-box" id="smtp-host-input-box"/>
+              <div class="connection-action-wrapper">
+                <div class="connection-buttons hide" id="smtp-connection-buttons">
+                  <div class="connection-save" id="smtp-connection-save" onclick="smtpConnectionSave()">Save</div>
+                  <div class="connection-cancel" id="smtp-connection-cancel" onclick="smtpConnectionCancel()">Cancel</div>
+                </div>
+              </div>
+            </div>
+            <div class="connection-text">Port</div>
+            <div class="connection-input-box-container">
+              <input class="connection-input-box" id="smtp-port-input-box"/>
+            </div>
+            <div class="connection-description">Servers typically use port 587</div>
+            <div class="connection-text">User</div>
+            <div class="connection-input-box-container">
+              <input class="connection-input-box" id="smtp-user-input-box"/>
+            </div>
+            <div class="connection-text">Pass</div>
+            <div class="connection-input-box-container">
+              <input class="connection-input-box" id="smtp-pass-input-box"/>
+            </div>
+          </div>
+        </div>
+       </div>
+
     </div>
   </div>
 
@@ -97,6 +126,7 @@ Please keep this header comment in all copies of the program.
   <script src="/pages/connections/connections.js"></script>
   <script src="/pages/connections/tautulliKeyConnection.js"></script>
   <script src="/pages/connections/tautulliURLConnection.js"></script>
+  <script src="/pages/connections/smtpConnection.js"></script>
   <script src="/modals/notification/notification.js"></script>
 </body>
 </html>
