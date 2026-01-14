@@ -23,5 +23,6 @@
 window.onload = async function() {
     initTautulliURLInputBox();
     initTautulliAPIInputBox();
+    initSMTPInputBoxes();
     await fetch("/backend/overseerr/alive");
 }

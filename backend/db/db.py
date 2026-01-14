@@ -179,14 +179,15 @@ def populate_users_table():
 
     query = """
             INSERT INTO users (
-                user_id, username, friendly_name, is_active, total_duration, last_seen_unix,
+                user_id, username, friendly_name, email, is_active, total_duration, last_seen_unix,
                 last_seen_date, last_seen_formatted, last_watched
             ) VALUES (
-                :user_id, :username, :friendly_name, :is_active, :total_duration, :last_seen_unix,
+                :user_id, :username, :friendly_name, :email, :is_active, :total_duration, :last_seen_unix,
                 :last_seen_date, :last_seen_formatted, :last_watched
             ) ON CONFLICT(user_id) DO UPDATE SET
                 username = excluded.username,
                 friendly_name = excluded.friendly_name,
+                email = excluded.email,
                 is_active = excluded.is_active,
                 total_duration = excluded.total_duration,
                 last_seen_unix = excluded.last_seen_unix,
@@ -413,7 +414,9 @@ def init_db():
                 last_seen_unix INTEGER,
                 last_seen_formatted TEXT,
                 last_seen_date TEXT,
-                last_watched TEXT
+                last_watched TEXT,
+                receives_system_update_emails INTEGER DEFAULT 1,
+                receives_content_update_emails INTEGER DEFAULT 1
             );
         """)
 
