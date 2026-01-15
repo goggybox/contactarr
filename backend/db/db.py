@@ -179,16 +179,17 @@ def populate_users_table():
 
     query = """
             INSERT INTO users (
-                user_id, username, friendly_name, email, is_active, total_duration, last_seen_unix,
+                user_id, username, friendly_name, email, is_active, is_admin, total_duration, last_seen_unix,
                 last_seen_date, last_seen_formatted, last_watched
             ) VALUES (
-                :user_id, :username, :friendly_name, :email, :is_active, :total_duration, :last_seen_unix,
+                :user_id, :username, :friendly_name, :email, :is_active, :is_admin, :total_duration, :last_seen_unix,
                 :last_seen_date, :last_seen_formatted, :last_watched
             ) ON CONFLICT(user_id) DO UPDATE SET
                 username = excluded.username,
                 friendly_name = excluded.friendly_name,
                 email = excluded.email,
                 is_active = excluded.is_active,
+                is_admin = excluded.is_admin,
                 total_duration = excluded.total_duration,
                 last_seen_unix = excluded.last_seen_unix,
                 last_seen_date = excluded.last_seen_date,
@@ -335,6 +336,23 @@ def populate_movies():
                         "movie_watches"
                     )
 
+def get_users():
+    with get_connection() as conn:
+        users = _get_table(conn, "users")
+    return users
+
+def get_admins():
+    admins = []
+    with get_connection() as conn:
+        users = _get_table(conn, "users")
+        admins = [u for u in users if u['is_admin'] == 1]
+    return admins
+
+def remove_admin(username):
+    with get_connection() as conn:
+        conn.execute("UPDATE users SET is_admin=0 WHERE username = ?", (username,))
+        user = conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
+        print(user["is_admin"])
 
 def init_db():
     with get_connection() as conn:
@@ -410,6 +428,7 @@ def init_db():
                 friendly_name TEXT,
                 email TEXT,
                 is_active INTEGER,
+                is_admin INTEGER DEFAULT 0,
                 total_duration TEXT,
                 last_seen_unix INTEGER,
                 last_seen_formatted TEXT,

@@ -1,0 +1,164 @@
+<!-- 
+
+-----------------------------contactarr------------------------------
+This file is part of contactarr
+Copyright (C) 2025 goggybox https://github.com/goggybox
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+that this program is licensed under. See LICENSE file. If not
+available, see <https://www.gnu.org/licenses/>.
+
+Please keep this header comment in all copies of the program.
+--------------------------------------------------------------------
+
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>contactarr</title>
+  <link rel="stylesheet" href="sidebar.css">
+  <link rel="stylesheet" href="content.css">
+  <link rel="stylesheet" href="global.css">
+  <link rel="stylesheet" href="/pages/settings/settings.css">
+  <link rel="stylesheet" href="/modals/notification/notification.css">
+  <link rel="stylesheet" href="/modals/test-email/testEmail.css">
+  <link rel="stylesheet" href="/components/user-selector/userSelector.css">
+  <link rel="icon" href="contactarr.png">
+</head>
+<body>
+  <div class="sidebar">
+    <div class="header">
+      <h2>contact<span id="arr">arr</span></h2>
+    </div>
+    <nav id="sidebar-content">
+      <ul>
+        <li onclick="goToDashboard()"><a href="/">Dashboard</li>
+        <li class="active" onclick="goToSettings()"><a href="/settings">Settings</a></li>
+      </ul>
+    </nav>  
+  </div>
+  <div id="modal-window" class="hidden">
+    <!-- modals will be dynamically added here... -->
+  </div>
+  <div id="notification-container">
+    <!-- notification modals will be dynamically added here... -->
+    <!--     (modals that will not cover the full screen)      -->
+  </div>
+
+  <div class="content-wrapper">
+    <div class="content">
+      <div class="settings-container">
+        <h2>Your Server</h2>
+        <div class="your-server-settings">
+          <p class="settings-descriptor">Configure settings for your Plex Media Server.</p>
+          <div class="connections-container">
+            <div class="connection">
+              <p class="connection-text">Server Name</p>
+              <div class="connection-input-box-container">
+                <input class="connection-input-box" id="server-name-input-box"/>
+                <div class="connection-action-wrapper">
+                  <div class="connection-buttons hide" id="server-settings-buttons">
+                    <div class="connection-save" id="server-settings-save" onclick="serverSettingsSave()">Save</div>
+                    <div class="connection-cancel" id="server-settings-cancel" onclick="serverSettingsCancel()">Cancel</div>
+                  </div>
+                </div>
+              </div>
+              <p class="connection-text" id="admin-users-text">Admin Users</p>
+              <div class="user-selector" id="admin-users-selector"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-container">
+        <h2>Connections</h2>
+
+        <!-- TAUTULLI CONNECTION -->
+        <div class="tautulli">
+          <h3>Tautulli</h3>
+          <div class="connections-container">
+            <div class="connection" id="tautulli-connection">
+              <div class="connection-text" id="tautulli-connection-text">API Key</div>
+              <div class="connection-input-box-container">
+                <input class="connection-input-box" id="tautulli-connection-input-box"/>
+                <div class="connection-action-wrapper">
+                  <div class="connection-test" id="tautulli-connection-test" onclick="tautulliConnectionTest()">Test</div>
+                  <div class="connection-buttons hide" id="tautulli-connection-buttons">
+                    <div class="connection-save" id="tautulli-connection-save" onclick="tautulliConnectionSave()">Save</div>
+                    <div class="connection-cancel" id="tautulli-connection-cancel" onclick="tautulliConnectionCancel()">Cancel</div>
+                  </div>
+                </div>
+              </div>
+              <div class="connection-description">Enter the API key to connect to your Tautulli instance</div>
+              <div class="connection-text" id="tautulli-connection2-text">API URL</div>
+              <div class="connection-input-box-container">
+                <input class="connection-input-box" id="tautulli-connection2-input-box"/>
+                <div class="connection-action-wrapper">
+                  <div class="connection-buttons hide" id="tautulli-connection2-buttons">
+                    <div class="connection-save" id="tautulli-connection2-save" onclick="tautulliConnection2Save()">Save</div>
+                    <div class="connection-cancel" id="tautulli-connection2-cancel" onclick="tautulliConnection2Cancel()">Cancel</div>
+                  </div>
+                </div>
+              </div>
+              <div class="connection-description">Enter the URL to your Tautulli instance's API</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SMTP CONNECTION -->
+        <div class="smtp">
+          <h3>SMTP</h3>
+          <div class="connections-container">
+            <div class="connection">
+              <div class="connection-text">Host</div>
+              <div class="connection-input-box-container">
+                <input class="connection-input-box" id="smtp-host-input-box"/>
+                <div class="connection-action-wrapper">
+                  <div class="connection-test" id="smtp-connection-test" onclick="showTestEmailModal()">Test</div>
+                  <div class="connection-buttons hide" id="smtp-connection-buttons">
+                    <div class="connection-save" id="smtp-connection-save" onclick="smtpConnectionSave()">Save</div>
+                    <div class="connection-cancel" id="smtp-connection-cancel" onclick="smtpConnectionCancel()">Cancel</div>
+                  </div>
+                </div>
+              </div>
+              <div class="connection-text">Port</div>
+              <div class="connection-input-box-container">
+                <input class="connection-input-box" id="smtp-port-input-box"/>
+              </div>
+              <div class="connection-description">Servers typically use port 587</div>
+              <div class="connection-text">User</div>
+              <div class="connection-input-box-container">
+                <input class="connection-input-box" id="smtp-user-input-box"/>
+              </div>
+              <div class="connection-text">Pass</div>
+              <div class="connection-input-box-container">
+                <input class="connection-input-box" id="smtp-pass-input-box"/>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="nav.js"></script>
+  <script src="/pages/settings/settings.js"></script>
+  <script src="/pages/settings/tautulliKeyConnection.js"></script>
+  <script src="/pages/settings/tautulliURLConnection.js"></script>
+  <script src="/pages/settings/smtpConnection.js"></script>
+  <script src="/modals/notification/notification.js"></script>
+  <script src="/modals/test-email/testEmail.js"></script>
+</body>
+</html>

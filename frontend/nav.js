@@ -20,10 +20,10 @@
 // Please keep this header comment in all copies of the program.
 // --------------------------------------------------------------------
 
-  function goToConnections() {
-    window.location.href = "/connections";
-  }
-
   function goToDashboard() {
     window.location.href = "/";
+  }
+
+  function goToSettings() {
+    window.location.href = "/settings";
   }

@@ -45,5 +45,9 @@ def dashboard():
 def connections():
     return FileResponse("frontend/pages/connections/connections.html")
 
+@app.get("/settings")
+def connections():
+    return FileResponse("frontend/pages/settings/settings.html")
+
 # Serve frontend
 app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")

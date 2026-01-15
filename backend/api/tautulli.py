@@ -93,7 +93,7 @@ def get_users():
         return
 
     user_array = users['data']
-    fields_to_keep = {"user_id", "username", "friendly_name", "email", "is_active"}
+    fields_to_keep = {"user_id", "username", "friendly_name", "email", "is_active", "is_admin"}
     filtered_users = [
         {k: v for k, v in u.items() if k in fields_to_keep}
         for u in user_array

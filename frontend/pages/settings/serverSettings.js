@@ -20,9 +20,3 @@
 // Please keep this header comment in all copies of the program.
 // --------------------------------------------------------------------
 
-window.onload = async function() {
-    initTautulliURLInputBox();
-    initTautulliAPIInputBox();
-    initSMTPInputBoxes();
-    await fetch("/backend/overseerr/alive");
-}
