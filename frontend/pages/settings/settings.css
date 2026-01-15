@@ -29,6 +29,15 @@ Please keep this header comment in all copies of the program.
     border-left: 1px solid var(--primary-background-highlighted-colour);
 }
 
+.content h2 {
+    margin-bottom: 10px;
+}
+
+.settings-descriptor {
+    margin-bottom: 10px;
+    font-size: 1.1em;
+}
+
 .connection {
     display: grid;
     padding: 0px 5px 0px 5px;
@@ -38,8 +47,16 @@ Please keep this header comment in all copies of the program.
     margin-bottom: 15px;
 }
 
-.smtp {
-    margin-top: 30px;
+.settings-container {
+    margin-bottom: 50px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--primary-background-highlighted-colour);
+}
+
+.add-text {
+    font-style: italic;
+    color: var(--primary-background-colour);
+    user-select: none;
 }
 
 .connection-text {

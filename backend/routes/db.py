@@ -178,3 +178,15 @@ def populate_movies():
 @router.get("/link_tautulli")
 def link_tautulli():
     return db.link_tautulli()
+
+@router.get("/get_users")
+def get_users():
+    return db.get_users()
+
+@router.get("/get_admins")
+def get_admins():
+    return db.get_admins()
+
+@router.post("/remove_admin")
+def remove_admin(data: APIModel):
+    return db.remove_admin(data.key)
