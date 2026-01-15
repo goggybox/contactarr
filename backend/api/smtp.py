@@ -77,10 +77,10 @@ def validate_sender(sender):
 
 def send_test_email(sender, recipient):
     # validate emails
-    if not validate_recipient_string(recipient):
-        return False
     if not validate_sender(sender):
-        return False
+        return {"status": 400, "issue": "sender"}
+    if not validate_recipient_string(recipient):
+        return {"status": 400, "issue": "recipient"}
 
     # split recipients if given as list (separated by commas)
     recipients = recipient.split(",")
@@ -102,6 +102,6 @@ def send_test_email(sender, recipient):
             errors += 1
     
     if errors > 0:
-        return False
+        return {"status": 500}
 
-    return True
+    return {"status": 200}

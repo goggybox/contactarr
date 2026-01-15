@@ -102,6 +102,11 @@ Please keep this header comment in all copies of the program.
     font-size: 0.85em;
 }
 
+.modal-description.error {
+  color: var(--primary-error-text-colour);
+  font-style: normal;
+}
+
 .modal-input {
     grid-column: 2;
     width: 100%;
@@ -147,3 +152,57 @@ Please keep this header comment in all copies of the program.
 .modal-cancel-button:hover {
     background: var(--primary-accent-colour);
 }
+
+/*
+Source - https://bookofzeus.com/articles/css/animate-ellipsis-using-css3/
+Retrieved 2026-01-14
+*/
+.loading {
+    text-align: center;
+}
+.loading::after {
+  overflow: hidden;
+  display: inline-block;
+  vertical-align: bottom;
+  -moz-animation: ellipsis 0.75s infinite;
+  -webkit-animation:  ellipsis 0.75s infinite;
+  -o-animation:  ellipsis 0.75s infinite;
+  animation:  ellipsis 0.75s infinite;
+  content: "\2026"; /* ascii code for ellipsis */
+}
+@keyframes ellipsis {
+  from {
+    width: 2px;
+  }
+  to {
+    width: 20px;
+  }
+}
+
+@-moz-keyframes ellipsis {
+  from {
+    width: 2px;
+  }
+  to {
+    width: 20px;
+  }
+}
+
+@-webkit-keyframes ellipsis {
+  from {
+    width: 2px;
+  }
+  to {
+    width: 20px;
+  }
+}
+
+@-o-keyframes ellipsis {
+  from {
+    width: 2px;
+  }
+  to {
+    width: 20px;
+  }
+}
+/* END SOURCE */
