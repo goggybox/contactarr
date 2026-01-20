@@ -43,7 +43,7 @@ html, body {
 
 :root {
     --primary-text-colour: #ebddbe;
-    --secondary-text-colour: #595343;
+    --secondary-text-colour: #1f1d17;
     --tertiary-text-colour: #b9ae94;
     --quaternary-text-colour: #958b75;
     --primary-background-colour: #2e2b23;
@@ -70,15 +70,15 @@ html, body {
 
     --box-shadow: rgba(0, 0, 0, 0.2) 0px 7px 29px 0px;
 
-    --user-container-info-background-colour: var(--secondary-text-colour);
+    --user-container-info-background-colour: #595343;
 
-    /* Titan email colours */
-    --titan-email-backdrop-colour: #1B1E23;
-    --titan-email-background-colour: #000000;
-    --titan-email-primary-accent-colour: #EBAE00;
-    --titan-email-primary-text-colour: white;
-    --titan-email-secondary-text-colour: #BFBFBF;
-    --titan-email-footer-border: #555a61;
+    /* Server email colours */
+    --server-email-backdrop-colour: #1B1E23;
+    --server-email-background-colour: #000000;
+    --server-email-primary-accent-colour: #EBAE00;
+    --server-email-primary-text-colour: white;
+    --server-email-secondary-text-colour: #BFBFBF;
+    --server-email-footer-border: #555a61;
 
     --primary-border-radius: 12px;
     --secondary-border-radius: 20px;

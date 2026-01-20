@@ -57,17 +57,23 @@ class APICacheManager:
     def _load_cache(self, cache_key: str) -> Optional[Dict]:
         cache_path = self._get_cache_path(cache_key)
 
+        if not os.path.exists(cache_path):
+            return None
+
         try:
-            if os.path.exists(cache_path):
-                with open(cache_path, 'r') as f:
-                    return json.load(f)
+            with open(cache_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
         except (json.JSONDecodeError, IOError) as e:
             logger.warning(f"Error loading cache for {cache_key}: {e}")
-
-        return None
+            try:
+                os.remove(cache_path)
+            except OSError:
+                pass
+            return None
 
     def _save_cache(self, cache_key: str, data: Any, metadata: Optional[Dict] = None):
         cache_path = self._get_cache_path(cache_key)
+        tmp_path = cache_path + ".tmp"
 
         cache_data = {
             'data': data,
@@ -75,8 +81,9 @@ class APICacheManager:
         }
 
         try:
-            with open(cache_path, 'w') as f:
+            with open(tmp_path, 'w') as f:
                 json.dump(cache_data, f)
+            os.replace(tmp_path, cache_path)
         except IOError as e:
             logger.error(f"Error saving cache for {cache_key}: {e}")
 
@@ -106,11 +113,11 @@ class APICacheManager:
         thread = Thread(target=revalidate, daemon=True)
         thread.start()
 
-    def get(self, url: str, callback: Optional[Callable[[Any], None]] = None, headers: Optional[Dict] = None, params: Optional[Dict] = None) -> Optional[Any]:
+    def get(self, url: str, callback: Optional[Callable[[Any], None]] = None, headers: Optional[Dict] = None, params: Optional[Dict] = None, forceFresh: Optional[bool] = False) -> Optional[Any]:
         cache_key = self._get_cache_key(url, params)
 
         cache_data = self._load_cache(cache_key)
-        if cache_data:
+        if cache_data and not forceFresh:
             self._revalidate_async(url, callback, headers, params, cache_key)
             return cache_data['data']
 
@@ -157,8 +164,8 @@ class APICacheManager:
 
 cache_manager = APICacheManager()
 
-def apiGet(url: str, callback: Optional[Callable[[Any], None]] = None, headers: Optional[Dict] = None, params: Optional[Dict] = None) -> Optional[Any]:
-    return cache_manager.get(url, callback, headers, params)
+def apiGet(url: str, callback: Optional[Callable[[Any], None]] = None, headers: Optional[Dict] = None, params: Optional[Dict] = None, forceFresh: Optional[bool] = False) -> Optional[Any]:
+    return cache_manager.get(url, callback, headers, params, forceFresh)
 
 def clearCache(url: str = None):
     cache_manager.clear_cache(url)

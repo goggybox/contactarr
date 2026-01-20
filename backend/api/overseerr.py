@@ -27,7 +27,7 @@ from dotenv import load_dotenv
 from backend.api.cache import apiGet, clearCache
 from backend.api import config
 
-def getFromAPI(cmd, args=None):
+def getFromAPI(cmd, args=None, forceFresh=False):
     """
     use the OVERSEERR_API_KEY and OVERSEERR_API_URL fields from the .env
     file to contact Overseerr.
@@ -52,7 +52,7 @@ def getFromAPI(cmd, args=None):
                 params[k] = v
     
     try:
-        data = apiGet(url=url, headers=headers, params=params)
+        data = apiGet(url=url, headers=headers, params=params, forceFresh=forceFresh)
 
         if data:
             return data
@@ -72,6 +72,13 @@ def apikey():
     api_key = cnf['api_key']
     return api_key
 
+def validate_apikey():
+    response = getFromAPI("user", forceFresh=True)
+    if response == None:
+        return False
+
+    return True
+
 def set_apikey(val: str):
     """set the api key of the Overseerr instance to the .env file"""
     return config.set_config_value("OVERSEERR_API_KEY", val)
@@ -90,3 +97,9 @@ def get_requests():
     response = getFromAPI("request", [{"take": 9999999}])
     if response and response.get("results"):
         return response["results"]
+
+def get_movie_poster_url(rating_key: str):
+    """get the TMDb URL for the poster of a given movie"""
+    response = getFromAPI(f"movie/{rating_key}")
+    if response and response.get("posterPath"):
+        return response["posterPath"]

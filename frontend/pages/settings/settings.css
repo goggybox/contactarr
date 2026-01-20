@@ -23,6 +23,100 @@ Please keep this header comment in all copies of the program.
 
 */
 
+/*
+----------------------------------------
+            SERVER SETTINGS             
+----------------------------------------
+*/
+
+#server-settings-grid {
+    display: grid;
+    grid-template-columns: max-content max-content;
+    column-gap: 10px;
+}
+
+.settings-descriptor {
+    margin-bottom: 10px;
+    font-size: 1.1em;
+}
+
+.settings-container {
+    margin-bottom: 50px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--primary-background-highlighted-colour);
+}
+
+#unsubscribe-list-container {
+    max-width: 700px;
+}
+
+#unsubscribe-desc {
+    padding-top: 5px;
+}
+
+#unsubscribe-list {
+    display: grid;
+    grid-template-columns: 45% 55%;
+    column-gap: 15px;
+    padding-top: 15px;
+}
+
+.list-selector {
+    grid-column: 1;
+}
+
+.selector {
+    margin-top: 5px;
+    background: var(--primary-input-box-colour);
+    min-height: 36px;
+    border: 2px solid var(--secondary-background-colour);
+}
+
+.selector-item {
+    align-content: center;
+}
+
+.list-adder {
+    display: grid;
+    grid-template-columns: 1fr max-content;
+    background: var(--primary-input-box-colour);
+    border: 2px solid var(--secondary-background-colour);
+}
+.list-adder.active {
+    border: 2px solid var(--secondary-accent-colour);
+}
+
+.list-adder-button {
+    width: 48px;
+    display:flex;
+    align-items: center;
+    place-content: center;
+    background: rgba(0,0,0,0.2);
+    user-select: none;
+    cursor: pointer;
+}
+.list-adder-button:hover {
+    background: rgba(0,0,0,0.1);
+}
+
+#list-adder-text {
+    width: 100%;
+    border: 0;
+}
+#list-adder-text::placeholder {
+    font-style: italic;
+}
+
+.list {
+    grid-column: 2;
+}
+
+/*
+----------------------------------------
+              CONNECTIONS                 
+----------------------------------------
+*/
+
 .connections-container {
     margin-left: 20px;
     padding-left: 20px;
@@ -33,11 +127,6 @@ Please keep this header comment in all copies of the program.
     margin-bottom: 10px;
 }
 
-.settings-descriptor {
-    margin-bottom: 10px;
-    font-size: 1.1em;
-}
-
 .connection {
     display: grid;
     padding: 0px 5px 0px 5px;
@@ -45,12 +134,6 @@ Please keep this header comment in all copies of the program.
     column-gap: 10px;
     row-gap: 10px;
     margin-bottom: 15px;
-}
-
-.settings-container {
-    margin-bottom: 50px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--primary-background-highlighted-colour);
 }
 
 .add-text {
@@ -168,8 +251,23 @@ Please keep this header comment in all copies of the program.
 .connection-description {
     grid-column: 2;
     margin-top: -10px;
+    width: 400px;
     margin-bottom: 5px;
     font-style: italic;
-    color: var(--secondary-text-colour);
+    color: var(--quaternary-text-colour);
     padding-left: 5px;
+}
+
+/*
+----------------------------------------
+             GENERAL STYLES             
+----------------------------------------
+*/
+
+.grid1 {
+    grid-column: 1;
+}
+
+.grid2 {
+    grid-column: 2;
 }

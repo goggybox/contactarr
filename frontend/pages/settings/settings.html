@@ -60,23 +60,69 @@ Please keep this header comment in all copies of the program.
   <div class="content-wrapper">
     <div class="content">
       <div class="settings-container">
-        <h2>Your Server</h2>
+        <h2 id="server-section-name">Your Server</h2>
         <div class="your-server-settings">
           <p class="settings-descriptor">Configure settings for your Plex Media Server.</p>
-          <div class="connections-container">
-            <div class="connection">
-              <p class="connection-text">Server Name</p>
-              <div class="connection-input-box-container">
-                <input class="connection-input-box" id="server-name-input-box"/>
-                <div class="connection-action-wrapper">
-                  <div class="connection-buttons hide" id="server-settings-buttons">
-                    <div class="connection-save" id="server-settings-save" onclick="serverSettingsSave()">Save</div>
-                    <div class="connection-cancel" id="server-settings-cancel" onclick="serverSettingsCancel()">Cancel</div>
+          <div id="server-settings-grid">
+            <div class="connections-container grid1">
+              <div class="connection">
+                <p class="connection-text">Server Name</p>
+                <div class="connection-input-box-container">
+                  <input class="connection-input-box" id="server-name-input-box"/>
+                  <div class="connection-action-wrapper">
+                    <div class="connection-buttons hide" id="server-settings-buttons">
+                      <div class="connection-save" id="server-settings-save" onclick="serverSettingsSave()">Save</div>
+                      <div class="connection-cancel" id="server-settings-cancel" onclick="serverSettingsCancel()">Cancel</div>
+                    </div>
                   </div>
                 </div>
+                <p class="connection-text" id="admin-users-text">Admin Users</p>
+                <!-- <div id="container-container">
+                  <div id="admin-users-selector-container">
+                    <div class="user-selector" id="admin-users-selector"></div>
+                  </div>
+                </div> -->
+                <div class="users-selector" id="admin-selector">
+                  <!-- admin users selector -->
+                </div>
               </div>
-              <p class="connection-text" id="admin-users-text">Admin Users</p>
-              <div class="user-selector" id="admin-users-selector"></div>
+            </div>
+            <div class="connections-container grid2" id="unsubscribe-list-container">
+              <p class="connection-text">Email Unsubscribe Lists</p>
+              <p id="unsubscribe-desc">
+                Some users may want to unsubscribe from email notifications. Add such users here. 
+                You can define multiple separate unsubscribe lists for different types of emails.
+              </p>
+              <!--
+                <unsubscribe-list> GRID
+                  <list-selector>
+
+                  </list-selector>
+                  <list>
+
+                  </list>
+                </unsubscribe-list>
+              -->
+              <div class="list" id="unsubscribe-list">
+                <div class="list-selector" id="unsubscribe-list-selector">
+                  <p class="connection-text">Select List</p>
+                  <!--<div class="selector">
+                    selector-items will be added here
+                  </div>-->
+                  <!--
+                  <div class="list-adder" GRID>
+                    <input id="list-adder-text"/>
+                    <div class="list-adder-button">
+
+                    </div>
+                  </div>
+                  -->
+                </div>
+                <div id="list">
+                  <p class="connection-text">Users in List</p>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
@@ -116,6 +162,38 @@ Please keep this header comment in all copies of the program.
             </div>
           </div>
         </div>
+
+        <!-- OVERSEERR CONNECTION -->
+         <div class="overseerr">
+          <h3>Overseerr</h3>
+          <div class="connections-container">
+            <div class="connection" id="overseerr-connection">
+              <div class="connection-text" id="overseerr-connection-text">API Key</div>
+              <div class="connection-input-box-container">
+                <input class="connection-input-box" id="overseerr-connection-input-box"/>
+                <div class="connection-action-wrapper">
+                  <div class="connection-test" id="overseerr-connection-test" onclick="overseerrConnectionTest()">Test</div>
+                  <div class="connection-buttons hide" id="overseerr-connection-buttons">
+                    <div class="connection-save" id="overseerr-connection-save" onclick="overseerrConnectionSave()">Save</div>
+                    <div class="connection-cancel" id="overseerr-connection-cancel" onclick="overseerrConnectionCancel()">Cancel</div>
+                  </div>
+                </div>
+              </div>
+              <div class="connection-description">Enter the API key to connect to your Overseerr instance</div>
+              <div class="connection-text" id="overseerr-url-text">API URL</div>
+              <div class="connection-input-box-container">
+                <input class="connection-input-box" id="overseerr-url-input-box"/>
+                <div class="connection-action-wrapper">
+                  <div class="connection-buttons hide" id="overseerr-url-buttons">
+                    <div class="connection-save" id="overseerr-url-save" onclick="overseerrURLSave()">Save</div>
+                    <div class="connection-cancel" id="overseerr-url-cancel" onclick="overseerrURLCancel()">Cancel</div>
+                  </div>
+                </div>
+              </div>
+              <div class="connection-description">Enter the URL to your Overseerr instance's API</div>
+            </div>
+          </div>
+         </div>
 
         <!-- SMTP CONNECTION -->
         <div class="smtp">
@@ -157,6 +235,7 @@ Please keep this header comment in all copies of the program.
   <script src="/pages/settings/settings.js"></script>
   <script src="/pages/settings/tautulliKeyConnection.js"></script>
   <script src="/pages/settings/tautulliURLConnection.js"></script>
+  <script src="/pages/settings/overseerr.js"></script>
   <script src="/pages/settings/smtpConnection.js"></script>
   <script src="/modals/notification/notification.js"></script>
   <script src="/modals/test-email/testEmail.js"></script>

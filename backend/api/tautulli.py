@@ -27,7 +27,7 @@ from dotenv import load_dotenv
 from backend.api.cache import apiGet, clearCache
 from backend.api import config
 
-def getFromAPI(cmd, args=None):
+def getFromAPI(cmd, args=None, forceFresh=False):
     """
     use the TAUTULLI_API_KEY and TAUTULLI_API_URL fields from the .env file
     to contact the Tautulli api.
@@ -52,7 +52,7 @@ def getFromAPI(cmd, args=None):
                 params[k] = v
 
     try:
-        data = apiGet(url=api_url, params=params)
+        data = apiGet(url=api_url, params=params, forceFresh=forceFresh)
         
         if data:
             if data["response"]["result"] != "error":
@@ -65,6 +65,13 @@ def getFromAPI(cmd, args=None):
 def alive():
     """check if the tautulli instance is alive"""
     return True if getFromAPI("get_libraries") != None else False
+
+def validate_apikey():
+    response = getFromAPI("get_libraries", forceFresh=True)
+    if response == None:
+        return False
+    elif response.get("result") and response["result"] == "success":
+        return True
 
 def apikey():
     """get the api key of the Tautulli instance from the .env file"""
@@ -85,6 +92,39 @@ def url():
 def set_url(val: str):
     """set the url of the Tautulli instance's API to the .env file"""
     return config.set_config_value("TAUTULLI_API_URL", val)
+
+def get_movies():
+    # get library sections
+    sections = getFromAPI("get_libraries")
+    if not sections:
+        return None
+    
+    section_ids = [section["section_id"] for section in sections["data"] if section["section_type"] == "movie"]
+
+    # for each section, get the movies, and collect them all together
+    total_movies = []
+    for sec in section_ids:
+        partial = getFromAPI("get_library_media_info", [{"section_id": sec}, {"length": 999999999}, {"order_column": "added_at"}, {"order_dir": "desc"}])
+        if partial:
+            total_movies.extend(partial["data"]["data"])
+
+    return total_movies
+
+def get_shows():
+    sections = getFromAPI("get_libraries")
+    if not sections:
+        return None
+
+    section_ids = [section["section_id"] for section in sections["data"] if section["section_type"] == "show"]
+
+    # for each section, get the shows, and collect them all together
+    total_shows = []
+    for sec in section_ids:
+        partial = getFromAPI("get_library_media_info", [{"section_id": sec}, {"length": 999999999}, {"order_column": "added_at"}, {"order_dir": "desc"}])
+        if partial:
+            total_shows.extend(partial["data"]["data"])
+
+    return total_shows
 
 def get_users():
     # get the first 5 attributes from the /get_users endpoint
@@ -179,12 +219,16 @@ def get_users():
 
 def get_episode_watch_history(user_id):
     history = getFromAPI("get_history", [{"user_id": user_id}, {"media_type": "episode"}, {"length": 9999999}])
+    if not history:
+        return None
     
     if history.get("data") and history["data"].get("data"):
         return history["data"]["data"]
 
 def get_movie_watch_history(user_id):
     history = getFromAPI("get_history", [{"user_id": user_id}, {"media_type": "movie"}, {"length": 9999999}])
+    if not history:
+        return None
 
     if history.get("data") and history["data"].get("data"):
         return history["data"]["data"]

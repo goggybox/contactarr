@@ -23,42 +23,68 @@ Please keep this header comment in all copies of the program.
 
 */
 
-.user-selector {
+#admin-users-text { /* the title "Admin Users" to the left of the selector */
+    align-self: start;
+    margin-top: 5px;
+}
+
+.users-selector { /* outermost container for the list of users in the "Admin Users" sections */
+    position: relative;
+    grid-column: 2;
     width: 400px;
     min-height: 36px;
-    background: var(--primary-input-box-colour);
     color: var(--primary-text-colour);
-    outline: none;
-    border: 2px solid var(--secondary-background-colour);
     font-size: 1em;
+}
+
+.selector-list { /* container for list of admins in the "Admin Users" section */
     display: grid;
     grid-template-columns: 1fr max-content;
-    z-index: 3;
-}
-
-.admin-user-container {
-    display: flex;
-    gap: 5px;
-    grid-column: 1;
+    position: relative;
+    max-height: 128px;
+    height: auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    background: var(--primary-input-box-colour);
+    border: 2px solid var(--secondary-background-colour);
+    border-bottom: 0px;
     width: 100%;
-    height: 32px;
-    align-content: center;
-    padding: 5px;
+    z-index: 1;
+}
+
+#admin-dropdown { /* container for the list of users in the dropdown */
+    display: none;
+    grid-template-columns: 1fr max-content;
+    background: var(--primary-input-box-colour);
+    height: 90px;
+    overflow: auto;
+    overscroll-behavior: contain;
+    border: 2px solid var(--secondary-background-colour);
+    border-top: 0px;
+    box-shadow: rgba(0, 0, 0, 0.25) 0px 54px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px;
+}
+#admin-dropdown.dropdown {
+    display: grid;
+}
+
+.user-container { /* container for each user in the "Admin Users" section */
+    grid-column: 1;
+    height: 36px;
+    align-items: center;
+    padding: 5px 7px;
+    display: flex;
+    gap: 7px;
     border-bottom: 2px solid rgba(0,0,0,0.3);
 }
-.admin-user-container.last {
-    border-bottom: none;
+.user-container.last {
+    border-bottom: 0;
 }
 
-#admin-users-text {
-    margin-top: 5px;
-    align-self: start;
-}
-
-.admin-user-remove {
+.remove-button { /* The remove buttons on admin users */
     grid-column: 2;
     width: 48px;
-    height: 32px;
+    height: 36px;
     background: rgba(0,0,0,0.2);
     font-weight: 600;
     font-size: 1.2em;
@@ -70,36 +96,79 @@ Please keep this header comment in all copies of the program.
     cursor: pointer;
     user-select: none;
 }
-.admin-user-remove:hover {
+.remove-button.last {
+    border-bottom: 0;
+}
+.remove-button:hover {
     background: rgba(0,0,0,0.1);
 }
 
-.admin-friendly-name {
-    font-weight: 600;
+.add-row { /* top and bottom shadows are enabled by adding the .top-shaodw/.bottom-shadow classes */
+    display: grid;
+    grid-template-columns: 1fr max-content;
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    height: 36px;
+    align-items: center;
+    background: var(--primary-input-box-colour);
+    border: 2px solid var(--secondary-background-colour);
+    box-shadow: var(--top-shadow, 0 0 0 0 rgba(0,0,0,0)), var(--bottom-shadow, 0 0 0 0 rgba(0,0,0,0));
+}
+.add-row.top-shadow {
+    --top-shadow: 0 -8px 12px -4px rgba(0,0,0,0.4);
+}
+.add-row.bottom-shadow {
+    --bottom-shadow: 0 8px 12px -4px rgba(0,0,0,0.15);
+    border-bottom: 2px solid rgba(0,0,0,0.3);
 }
 
-.user-selector-dropdown {
+.add-text { /* the "Add..." text on the dropdown box in the "Admin Users" section */
+    padding: 5px 7px;
+    grid-column: 1;
+    font-style: italic;
+    color: var(--quaternary-text-colour);
+}
+
+.dropdown-button { /* dropdown button for the "Admin Users" section */
     grid-column: 2;
     width: 48px;
     height: 32px;
     background: rgba(0,0,0,0.2);
     font-weight: 600;
     font-size: 1.2em;
-
     display: flex;
     justify-content: center;
     align-items: center;
     cursor: pointer;
     user-select: none;
 }
-.user-selector-dropdown:hover {
+.dropdown-button:hover {
     background: rgba(0,0,0,0.1);
 }
-
-.user-selector-dropdown p {
+.dropdown-chevron {
     transform: translateY(-3px);
 }
+.dropdown-chevron.dropdown {
+    transform: translateY(5px);
+}
 
-.user-selector-dropdown.open p {
-    transform: translateY(3px);
+.add-button { /* the add button on users in the dropdown */
+    grid-column: 2;
+    width: 48px;
+    height: 36px;
+    background: rgba(0,0,0,0.12);
+    font-weight: 600;
+    font-size: 1.2em;
+    border-bottom: 2px solid rgba(0,0,0,0.3);
+    color: var(--tertiary-text-colour);
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+}
+.add-button:hover {
+    background: rgba(0,0,0,0.075);
 }

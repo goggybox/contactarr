@@ -34,12 +34,12 @@ def get_env_path():
         current_file = Path(__file__).resolve()
         project_root = current_file.parent.parent.parent
         _env_path = project_root / '.env'
+    load_dotenv(dotenv_path=_env_path, override=True)
     return _env_path
 
 def get_config_value(key: str, default: Optional[str] = None) -> Optional[str]:
     """get a fresh configuration value from the environment"""
     env_path = get_env_path()
-    load_dotenv(dotenv_path=env_path, override=True)
     
     value = os.getenv(key, default)
     
@@ -67,8 +67,6 @@ def set_config_value(key: str, value: str) -> bool:
             for k, v in env_data.items():
                 f.write(f'{k}={v}\n')
 
-        load_dotenv(dotenv_path=env_path, override=True)
-
         return True
     except Exception as e:
         return False
@@ -84,7 +82,8 @@ def get_overseerr_config():
     """get fresh Overseerr configuration"""
     return {
         'api_key': get_config_value('OVERSEERR_API_KEY'),
-        'api_url': get_config_value('OVERSEERR_API_URL')
+        'api_url': get_config_value('OVERSEERR_API_URL'),
+        'last_requests_process': get_config_value('OVERSEERR_LAST_REQUESTS_PROCESS')
     }
 
 def get_smtp_config():
@@ -101,4 +100,10 @@ def get_tvdb_config():
     return {
         'api_key': get_config_value('TVDB_API_KEY'),
         'api_url': get_config_value('TVDB_API_URL', 'https://api.thetvdb.com'),
+    }
+
+def get_server_config():
+    return {
+        'name': get_config_value('SERVER_NAME'),
+        'unsubscribe_lists': [x for x in (get_config_value('UNSUBSCRIBE_LISTS') or '').split(",") if x],
     }

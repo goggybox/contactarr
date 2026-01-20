@@ -59,13 +59,12 @@ function tautulliConnectionCancel() {
 }
 
 async function tautulliConnectionTest() {
-    const res = await fetch("/backend/tautulli/alive");
+    const res = await fetch("/backend/tautulli/validate_apikey");
     const alive = await res.json();
-    console.log(alive);
     if (alive) {
         showSuccess("Successfully connected to Tautulli!");
     } else {
-        showError("Cannot connect to Tautulli. Confirm that the API key and url are correct.");
+        showError("Cannot connect to Tautulli. Are you sure the API key and URL are correct?");
     }
 }
 
@@ -82,7 +81,7 @@ function showSaveAndCancelButtons() {
     btns.classList.remove("hide");
     testBtn.classList.add("hide");
 }
-
+          
 function tautulliAPIKeyListener() {
     // event listener for TautulliAPIKey input box.
     const inp = document.getElementById("tautulli-connection-input-box");

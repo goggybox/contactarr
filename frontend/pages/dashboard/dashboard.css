@@ -225,7 +225,7 @@ MODIFIED TO APPLY TO HORIZONTAL EDGES
 
 #embed-container {
     height: 550px;
-    background: var(--titan-email-backdrop-colour);
+    background: var(--server-email-backdrop-colour);
     border: 3px solid var(--secondary-background-colour);
     margin: 10px;
     padding-top: 40px;
@@ -256,12 +256,15 @@ MODIFIED TO APPLY TO HORIZONTAL EDGES
     user-select: none;
     cursor: pointer;
     margin-top: 10px;
-    background: var(--primary-input-box-colour);
+    background: var(--secondary-accent-colour);
     border: 3px solid var(--secondary-background-colour);
-    color: var(--primary-text-colour);
+    color: var(--secondary-text-colour);
     width: fit-content;
     padding: 5px 10px;
     font-weight: 600;
+}
+.select-users-button:hover {
+    background: var(--primary-accent-colour);
 }
 
 .select-users-button.selecting {
