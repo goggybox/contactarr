@@ -23,15 +23,23 @@
 export let selecting_users = false;
 export let selected_users = [];
 let users;
-let selected_email = "titan";
+let selected_email = "server";
 
-function saveTitanTextArea(value) {
-    localStorage.setItem("TitanHtmlTextArea", value);
+function saveServerTextArea(value) {
+    localStorage.setItem("ServerHtmlTextArea", value);
 }
 
-function loadTitanTextArea() {
-    const value = localStorage.getItem("TitanHtmlTextArea");
-    const htmlEmail = document.getElementById("titan-content-container");
+function loadServerTextArea() {
+    let value = localStorage.getItem("ServerHtmlTextArea");
+    const htmlEmail = document.getElementById("server-content-container");
+    console.log(value);
+    if (value === "" || value === null) {
+        // use default email structure
+        value = "<h2>Example Email Template</h2>\n";
+        value += "<p>Dear Plex users,</p>\n"
+        value += "<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec ac lectus eget lacus efficitur scelerisque. Mauris a lectus nec lectus pharetra congue et a ligula. Suspendisse velit nulla, dignissim sit amet imperdiet faucibus, dictum eget magna. Aenean sagittis risus in massa porttitor fermentum.</p>\n";
+        value += "<p>Phasellus et libero vel tellus facilisis ultricies. Vivamus pellentesque lacus et elit vulputate, ut elementum arcu varius. Quisque sed maximus odio. Quisque ac leo iaculis, dapibus tortor id, cursus nisl. Nullam sagittis arcu sed dui suscipit pellentesque in id elit. Fusce nec semper risus. Suspendisse orci odio, posuere tempus quam id, commodo dictum arcu. Maecenas ac lacus quis massa euismod tincidunt et tristique quam. Vestibulum commodo bibendum efficitur.</p>\n";
+    }
     htmlEmail.innerHTML = value;
     return value;
 }
@@ -48,12 +56,12 @@ function getLineEnd(text, index) {
 function textAreaListeners() {
     // add input listener to HTML input
     const htmlInput = document.getElementById("htmlInput");
-    const titanContentContainer = document.getElementById("titan-content-container");
+    const serverContentContainer = document.getElementById("server-content-container");
     htmlInput.addEventListener('input', () => {
         // update the HTML email being displayed
-        titanContentContainer.innerHTML = htmlInput.value;
+        serverContentContainer.innerHTML = htmlInput.value;
         // save the changes to browser storage
-        saveTitanTextArea(htmlInput.value);
+        saveServerTextArea(htmlInput.value);
     });
 
     // modify behaviour of Tab
@@ -298,7 +306,7 @@ function displayUsers(users) {
     }
 
     // attach checkbox toggle event to Select Users button
-    const button = document.getElementById("titan-select-users-button");
+    const button = document.getElementById("server-select-users-button");
     button.addEventListener("click", () => {clickSelectUsersButton(button)});
 
     // attach event to "Select All" users button.
@@ -330,46 +338,46 @@ function displayEmail(service) {
     const embedContainer = document.getElementById("embed-container");
     embedContainer.innerHTML = '';
 
-    if (service === "titan") {
-        // titan-email-container
-        const titanEmailContainer = document.createElement("div");
-        titanEmailContainer.classList.add("titan-email-container");
-        embedContainer.appendChild(titanEmailContainer);
+    if (service === "server") {
+        // server-email-container
+        const serverEmailContainer = document.createElement("div");
+        serverEmailContainer.classList.add("server-email-container");
+        embedContainer.appendChild(serverEmailContainer);
 
         // img
         const img = document.createElement("img");
-        img.classList.add("titan-banner");
-        img.src = '/emails/titan/banner.png';
-        titanEmailContainer.appendChild(img);
+        img.classList.add("server-banner");
+        img.src = '/emails/server/banner.png';
+        serverEmailContainer.appendChild(img);
 
         // content-container
         const contentContainer = document.createElement("div");
-        contentContainer.id = "titan-content-container";
-        titanEmailContainer.appendChild(contentContainer);
+        contentContainer.id = "server-content-container";
+        serverEmailContainer.appendChild(contentContainer);
 
         // footer
         const footer = document.createElement("div");
-        footer.classList.add("titan-footer");
+        footer.classList.add("server-footer");
         const p = document.createElement("p");
-        p.textContent = "You can unsubscribe from receiving new content notifications and/or service updates. To do so, reply to this email and specify which (or both) you would like to unsubscribe from.";
+        p.textContent = "You can unsubscribe from email notifications by replying to this email.";
         footer.appendChild(p);
-        titanEmailContainer.appendChild(footer);
+        serverEmailContainer.appendChild(footer);
         
         // load textarea value
         const htmlInput = document.getElementById("htmlInput");
-        htmlInput.value = loadTitanTextArea();
+        htmlInput.value = loadServerTextArea();
 
         textAreaListeners();
     }
 
 }
 
-function titanSelected() {
+function serverSelected() {
     displayEmail(selected_email);
 }
 
 window.onload = async function() {
-    // load aray of Tautulli users when dashboard loads
+    // load array of Tautulli users when dashboard loads
     let res = await fetch ("/backend/tautulli/get_users");
     
     if (res.status === 200) {

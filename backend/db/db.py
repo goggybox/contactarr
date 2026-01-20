@@ -21,8 +21,11 @@
 # --------------------------------------------------------------------
 
 import sqlite3
+import time
 from pathlib import Path
 from backend.api import tautulli
+from backend.api import overseerr
+from backend.api import config
 
 DB_PATH = Path(__file__).parent / "contactarr.db"
 
@@ -50,6 +53,14 @@ def _get_table(conn, name):
     contents = conn.execute(f"SELECT * FROM {name}").fetchall()
     return [dict(row) for row in contents]
 
+def _get_table_indexed(conn, name, key_field):
+    """
+    get the entire contents of a table, but make it accessible by a particular
+    field. (easy access, faster than O(n), which is what _get_table() would require).
+    """
+    rows = conn.execute(f"SELECT * FROM {name}").fetchall()
+    return {row[key_field]: dict(row) for row in rows}
+
 def _get_movie_id_from_rating_key(conn, rating_key):
     """
     get a movie's id from its rating_key
@@ -60,6 +71,22 @@ def _get_movie_id_from_rating_key(conn, rating_key):
     ).fetchone()
     return row["movie_id"] if row else None
 
+def _get_movie_id_from_name_year(conn, movie_name, year):
+    row = conn.execute(
+        "SELECT movie_id FROM movies WHERE movie_name = ? AND year = ?",
+        (movie_name, year,)
+    ).fetchone()
+    return row["movie_id"] if row else None
+
+def _get_movie_from_db_from_rating_key(conn, rating_key):
+    row = conn.execute(
+        "SELECT * FROM movies WHERE rating_key = ?",
+        (int(rating_key),)
+    ).fetchone()
+    if row is None:
+        return None
+    return dict(row)
+8
 def _get_show_id_from_rating_key(conn, rating_key):
     """
     get a show's id from its rating_key
@@ -95,6 +122,21 @@ def _attr_val_in_table(conn, attr, val, name):
     determine whether or not a given attribute value is in a table.
     """
     cursor = conn.execute(f"SELECT 1 FROM {name} WHERE {attr}={val} LIMIT 1")
+    return cursor.fetchone() is not None
+
+def _attrs_vals_in_table(conn, attrs, vals, name):
+    """
+    determine whether or not a given combination of attribute,value pairs are in a table.
+    """
+    query = f"""
+        SELECT 1
+        FROM {name}
+        WHERE {attrs[0]} = ?
+        AND {attrs[1]} = ?
+        LIMIT 1
+    """
+
+    cursor = conn.execute(query, (vals[0], vals[1]))
     return cursor.fetchone() is not None
 
 def _add_to_table(conn, attrs, vals, name):
@@ -157,8 +199,121 @@ def get_connection():
     return SafeConnection(conn)
 
 def link_tautulli():
-    populate_users_table()
-    return True
+    if tautulli.validate_apikey():
+        print("LINKING TAUTULLI...")
+        begin_timer = time.time()
+        populate_users_table()
+        # populate_movies()
+        populate_shows()
+        end_timer = time.time()
+        print(f"\nFINISHED LINKING TAUTULLI. (Took {end_timer-begin_timer}s)")
+        return True
+    print("Tautulli API key not valid, cancelling link.")
+    return False
+
+def link_overseerr():
+    if overseerr.validate_apikey():
+        print("LINKING OVERSEERR...")
+        process_overseerr_requests()
+        return True
+    print("Overseerr API key not valid, cancelling link.")
+    return False
+
+"""
+TODO:
+prefer to get posters from Tautulli. metadata command returns data with "thumb" URI, can use that
+in a "pms_image_proxy" command to get the poster.
+
+need to link overseerr, and process all requests. add movies/shows from requests that were not
+added from tautulli. WOULD BE BETTER to NOT add all tmdb poster urls to database right now,
+very slow operation - and many movies on tautulli may no longer be on overseerr.
+
+"""
+
+def get_unix_from_iso(iso):
+    dt = datetime.strptime(iso, "%Y-%m-%dT%H:%M:%S.%fZ")
+    dt = dt.replace(tzinfo=timezone.utc)
+    unix = int(dt.timestamp())
+    return unix
+
+def process_overseerr_requests():
+    cnf = config.get_overseerr_config()
+    last_process = cnf.get('last_requests_process', 0) # will ignore requests from before the last processing
+
+    requests = overseerr.get_requests()
+    
+    with get_connection() as conn:
+        with conn:
+            # existing tables to compare against
+            movies_table = _get_table_indexed(conn, "movies", "tmdb_id")
+            # shows_table = _get_table(conn, "shows", "")
+
+            # consider each request
+            process_movie_request(requests[3], movies_table)
+            # for request in requests:
+            #     if get_unix_from_iso(request["updatedAt"] < last_process):
+            #         # this request will have been processed as part of a previous scan
+            #         continue
+                
+            #     # is it a movie or show?
+            #     if request["type"] == "movie":
+            #         # movie
+            #         process_movie_request(request, movies_table)
+            #     else:
+            #         # tv
+            #         process_tv_request(request, shows_table)
+
+def process_movie_request(request, movies_table):
+    # table fields for a request:
+        # request_id
+        # movie_id
+        # requested_at
+        # status
+        # updated_at
+        # user_id
+    # relevant table fields for a movie:
+        # tmdb_poster_url
+        # tautulli_poster_url
+        # movie_id
+        # tmdb_id
+        # rating_key
+
+    media = request["media"]
+    tmdbId = media["tmdbId"]
+    
+    # get movie from existing table
+    print(media)
+    movie_in_table = movies_table.get(tmdbId)
+    print(movie_in_table)
+
+    # if not movie_in_table:
+        # the movie may still be in the table, just may not have its tmdbId so couldn't be found.
+        # instead search for name+year.
+
+    
+    # if the movie doesn't have a tautulli_poster_url, and doesn't have
+    # a tmdb_poster_url, add a tmdb_poster_url. (from /movie/{tmdbId}/ endpoint)
+    
+
+
+
+# def get_movie_poster_url_and_cache(rating_key: str):
+#     with get_connection() as conn:
+#         movie = _get_movie_from_db_from_rating_key(conn, rating_key)
+#         if movie:
+#             if not movie.get("tmdb_poster_url"):
+#                 # we don't have it in the db yet.
+#                 poster_url = overseerr.get_movie_poster_url(rating_key)
+#                 conn.execute(
+#                     "UPDATE movies SET tmdb_poster_url = ? WHERE rating_key = ?",
+#                     (poster_url, rating_key)
+#                 )
+#                 conn.commit()
+#                 return poster_url
+#             else:
+#                 return movie["tmdb_poster_url"]
+#         return None
+        
 
 def populate_users_table():
     """
@@ -198,143 +353,144 @@ def populate_users_table():
             """
     
     with get_connection() as conn:
+        print("Adding users to table...")
         conn.executemany(query, users)
+        print("Finished adding users.")
         return True
     
     return False
 
 def populate_shows():
-    """
-    function to populate the "shows", "seasons", "episodes", and "episode_watches" tables in the database.
-        - loop over the users in the users table.
-            - get the list of every episode watched by the user with "/get_history" endpoint.
-            - for each episode:
-                - if the grandparent_rating_key is already in the "shows" table, carry on. otherwise we must add the show:
-                    - add new entry to show table: (grandparent_rating_key, )
-    """
-
-    # get every user from users table
     with get_connection() as conn:
-        users = _get_table(conn, "users")
-        
-        # loop through every user
-        for user in users:
-            # get the list of episodes watched by the user
-            history = tautulli.get_episode_watch_history(user["user_id"])
+        with conn:
+            users = _get_table(conn, "users")
 
-            # loop through each episode watch
-            if history and isinstance(history, list) and len(history) > 0:
-                for episode in history:
-                    show_rating_key = episode["grandparent_rating_key"]
-                    season_rating_key = episode["parent_rating_key"]
-                    episode_rating_key = episode["rating_key"]
+            # first add all shows from active libraries
+            shows = tautulli.get_shows()
+            print(f"Shows: {len(shows)}")
+            shows_to_add = {}
+            for show in shows:
+                # CREATE TABLE IF NOT EXISTS shows (
+                #     show_id INTEGER PRIMARY KEY,
+                #     show_name TEXT,
+                #     year INTEGER,
+                #     rating_key INTEGER NOT NULL,
+                #     tvdb_id INTEGER UNIQUE
+                # );
+                show_name = show["title"]
+                year = show["year"]
+                rating_key = show.get("rating_key", None)
 
-                    # if the show isn't already in the shows table, add it.
-                    _add_or_ignore_to_table(conn,
-                        "show_name, rating_key",
-                        [episode["grandparent_title"], show_rating_key],
-                        "shows"
-                    )
-
-                    show_id = _get_show_id_from_rating_key(conn, show_rating_key)
-                    season_name_split = episode.get("parent_title").split() # e.g. ["Season", "1"]
-                    if season_name_split and len(season_name_split) > 1:
-                        season_num = season_name_split[1]
-
-                    # if this season isn't already in the seasons table, add it.
-                    #   - cannot add episode_count or added_at values from this data, will add later.
-                    if episode["grandparent_title"] == "Desperate Housewives":
-                        print(f"DESPERATE HOUSEWIVES {season_num}")
-                    _add_or_ignore_to_table(conn,
-                        "show_id, season_num, rating_key",
-                        [show_id, season_num, season_rating_key],
-                        "seasons"
-                    )
-
-                    season_id = _get_season_id_from_rating_key(conn, season_rating_key)
-
-                    # if this episode isn't already in the episodes table, add it.
-                    _add_or_ignore_to_table(conn,
-                        "season_id, show_id, rating_key, number, name",
-                        [season_id, show_id, episode_rating_key, episode["media_index"], episode["title"]],
-                        "episodes"
-                    )
-
-                    episode_id = _get_episode_id_from_rating_key(conn, episode_rating_key)
-
-                    # add an entry in episode_watches if not already there
-                    _add_or_ignore_to_table(conn,
-                        "user_id, episode_id, started, stopped, pause_duration",
-                        [episode["user_id"], episode_id, episode["started"], episode["stopped"], episode["paused_counter"]],
-                        "episode_watches"
-                    )
-
-        # populate season_added table
-        #   - for each show in the shows table, use "/get_library_media_info"
-        #     which includes "added_at" values
-        shows = _get_table(conn, "shows")
-
-        for show in shows:
-            seasons = tautulli.get_library_media_info(show["rating_key"])
-
-            if seasons and isinstance(seasons, list) and len(seasons) > 0:
-
-                # first, add show's year from "parent_year" field from "/get_metadata" for one season
-                season_metadata = tautulli.get_metadata(seasons[0]["rating_key"])
-                _update_row_or_ignore(conn,
-                    "show_id, year",
-                    [_get_show_id_from_rating_key(conn, seasons[0]["parent_rating_key"]), season_metadata["parent_year"]],
+                in_table = _attrs_vals_in_table(conn,
+                    ["show_name", "year"],
+                    [show_name, year],
                     "shows"
                 )
 
-                for season in seasons:
-                    _add_or_ignore_to_table(conn,
-                        "season_id, added_at",
-                        [_get_season_id_from_rating_key(conn, season["rating_key"]), season["added_at"]],
-                        "season_added"
-                    )
+                if not in_table:
+                    metadata = tautulli.get_metadata(rating_key)
+                    if not metadata:
+                        # no metadata, don't add yet in case version with metadata is found
+                        key = (show_name, year)
+                        if not shows_to_add.get(key):
+                            shows_to_add[key] = show
+                    else:
+                        # this is a version with metadata; add to table
+                        _add_to_table(conn,
+                            "show_name, year, rating_key, tautulli_poster_url",
+                            [show_name, year, rating_key, show["thumb"]],
+                            "shows"
+                        )
+            print(f"Shows to add: {len(shows_to_add)}")
+            print(shows_to_add)
 
 def populate_movies():
     with get_connection() as conn:
-        users = _get_table(conn, "users")
-        
-        # loop through every user
-        for user in users:
-            # get the list of episodes watched by the user
-            history = tautulli.get_movie_watch_history(user["user_id"])
+        with conn:
+            users = _get_table(conn, "users")
 
-            if history and isinstance(history, list) and len(history) > 0:
-                for movie in history:
-                    rating_key = movie["rating_key"]
+            # first add all movies from active libraries
+            movies = tautulli.get_movies()
+            print(f"Movies: {len(movies)}")
+            movies_to_add = {}
+            for movie in movies:
+                in_table = _attrs_vals_in_table(conn,
+                    ["movie_name", "year"],
+                    [movie["title"], movie["year"]],
+                    "movies"
+                )
 
-                    # add movie to movies table if not already there
-                    _add_or_ignore_to_table(conn,
-                        "movie_name, year, rating_key",
-                        [movie["title"], movie["year"], rating_key],
-                        "movies"
-                    )
+                if not in_table:
+                    metadata = tautulli.get_metadata(movie["rating_key"])
+                    if not metadata:
+                        # no metadata, don't add yet in case version with metadata is found
+                        key = (movie["title"], movie["year"])
+                        if not movies_to_add.get(key):
+                            movies_to_add[key] = movie
+                    else:
+                        _add_to_table(conn,
+                            "movie_name, year, rating_key, tautulli_poster_url",
+                            [movie["title"], movie["year"], movie["rating_key"], movie["thumb"]],
+                            "movies"
+                        )
+            print(f"Movies to add: {len(movies_to_add)}")
+            
+            # Tautulli may still have data for movies that have been removed from the plex
+            # server. we still want to include those.
+            for user in users:
+                # get the list of movies watched by the user
+                history = tautulli.get_movie_watch_history(user["user_id"])
 
-                    movie_id = _get_movie_id_from_rating_key(conn, rating_key)
+                if history and isinstance(history, list) and len(history) > 0:
+                    for movie in history:
+                        # see if the movie is already in the the movies table.
+                        # may not have the same rating_key, tmdb_id may be null.
+                        # instead search for movie_name+year combination.
+                        in_table = _attrs_vals_in_table(conn,
+                            ["movie_name", "year"],
+                            [movie["title"], movie["year"]],
+                            "movies"
+                        )
+                        
+                        if not in_table:
+                            metadata = tautulli.get_metadata(movie["rating_key"])
+                            key = (movie["title"], movie["year"])
+                            if not metadata:
+                                if not movies_to_add.get(key):
+                                    movies_to_add[key] = movie
 
-                    # get when the movie was added (from "/get_metadata" endpoint) and add to movie_added table
-                    # if not already there
-                    if not _attr_val_in_table(conn, "movie_id", movie_id, "movie_added"):
-                        metadata = tautulli.get_metadata(rating_key)
-                        if metadata:
-                            added_at = metadata["added_at"]
-                            # add to table
-                            _add_or_ignore_to_table(conn,
-                                "movie_id, added_at",
-                                [movie_id, added_at],
-                                "movie_added"
+                            if movies_to_add.get(key):
+                                movies_to_add.pop(key, None)
+
+                            # add the movie to the table
+                            _add_to_table(conn,
+                                "movie_name, year, rating_key, tautulli_poster_url",
+                                [movie["title"], movie["year"], movie["rating_key"], movie["thumb"]],
+                                "movies"
                             )
 
-                    # add an entry in movie_watches if not already there
+                        # at the same time, we want to record the user's watch of the movie in movie_watches.
+                        movie_id = _get_movie_id_from_name_year(conn, movie["title"], movie["year"])
+                        user_id = user["user_id"]
+                        started = movie["started"]
+                        stopped = movie["stopped"]
+                        pause_duration = movie["paused_counter"]
+                        _add_to_table(conn,
+                            "user_id, movie_id, started, stopped, pause_duration",
+                            [movie_id, user_id, started, stopped, pause_duration],
+                            "movie_watches"
+                        )
+
+            # if there are any movies still in movies_to_add, we will add them without metadata.
+            print(f"Movies left to add: {len(movies_to_add)}")
+            print(f"Adding without metadata...")
+            if len(movies_to_add) > 0:
+                for movie in movies_to_add.values():
                     _add_or_ignore_to_table(conn,
-                        "user_id, movie_id, started, stopped, pause_duration",
-                        [movie["user_id"], movie_id, movie["started"], movie["stopped"], movie["paused_counter"]],
-                        "movie_watches"
-                    )
+                        "movie_name, year, rating_key",
+                        [movie["title"], movie["year"], movie["rating_key"]],
+                        "movies"
+                    )            
 
 def get_users():
     with get_connection() as conn:
@@ -348,11 +504,27 @@ def get_admins():
         admins = [u for u in users if u['is_admin'] == 1]
     return admins
 
+def set_admins(lst):
+    """update list of admins"""
+    # to do this, first set is_admin = 0 for all users
+    with get_connection() as conn:
+        conn.execute("UPDATE users SET is_admin=0")
+        # now set is_admin = 1 for each user in lst
+        for u in lst:
+            conn.execute("UPDATE users SET is_admin=1 WHERE username = ?", (u["username"],))
+    return True
+
 def remove_admin(username):
     with get_connection() as conn:
         conn.execute("UPDATE users SET is_admin=0 WHERE username = ?", (username,))
-        user = conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
-        print(user["is_admin"])
+        return True
+    return False
+    
+def add_admin(username):
+    with get_connection() as conn:
+        conn.execute("UPDATE users SET is_admin=1 WHERE username = ?", (username,))
+        return True
+    return False
 
 def init_db():
     with get_connection() as conn:
@@ -361,8 +533,11 @@ def init_db():
                 show_id INTEGER PRIMARY KEY,
                 show_name TEXT,
                 year INTEGER,
-                rating_key INTEGER NOT NULL UNIQUE,
-                tvdb_id INTEGER UNIQUE
+                rating_key INTEGER NOT NULL,
+                tvdb_id INTEGER UNIQUE,
+                tvdb_poster_url TEXT,
+                tautulli_poster_url TEXT,
+                UNIQUE(show_name, year)
             );
         """)
 
@@ -433,9 +608,7 @@ def init_db():
                 last_seen_unix INTEGER,
                 last_seen_formatted TEXT,
                 last_seen_date TEXT,
-                last_watched TEXT,
-                receives_system_update_emails INTEGER DEFAULT 1,
-                receives_content_update_emails INTEGER DEFAULT 1
+                last_watched TEXT
             );
         """)
 
@@ -444,8 +617,11 @@ def init_db():
                 movie_id INTEGER PRIMARY KEY,
                 movie_name INTEGER,
                 year INTEGER,
-                rating_key INTEGER UNIQUE,
-                tmdb_id INTEGER UNIQUE
+                rating_key INTEGER,
+                tmdb_id INTEGER UNIQUE,
+                tmdb_poster_url TEXT,
+                tautulli_poster_url TEXT,
+                UNIQUE(movie_name, year)
             );
         """)
 

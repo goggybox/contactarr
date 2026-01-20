@@ -25,6 +25,7 @@ from fastapi import APIRouter
 from backend.api import tautulli
 from backend.api import overseerr
 from backend.api import smtp
+from backend.api import server
 from backend.db import db
 from fastapi.responses import PlainTextResponse
 
@@ -32,6 +33,9 @@ router = APIRouter()
 
 class APIModel(BaseModel):
     key: str
+
+class ListModel(BaseModel):
+    key: list
 
 class SMTPAllModel(BaseModel):
     host: str
@@ -67,9 +71,21 @@ def tau_set_url(data: APIModel):
 def tau_alive():
     return tautulli.alive()
 
+@router.get("/tautulli/validate_apikey")
+def tau_validate_apikey():
+    return tautulli.validate_apikey()
+
 @router.get("/tautulli/get_users")
 def tau_get_users():
     return tautulli.get_users()
+
+@router.get("/tautulli/get_movies")
+def tau_get_movies():
+    return tautulli.get_movies()
+
+@router.get("/tautulli/get_shows")
+def tau_get_shows():
+    return tautulli.get_shows()
 
 # ---------------------------------------- #
 #                OVERSEERR                 #
@@ -82,6 +98,10 @@ def ove_apikey():
 @router.post("/overseerr/set_apikey")
 def ove_set_apikey(data: APIModel):
     return overseerr.set_apikey(data.key)
+
+@router.get("/overseerr/validate_apikey")
+def ove_validate_apikey():
+    return overseerr.validate_apikey()
 
 @router.get("/overseerr/url")
 def ove_url():
@@ -99,6 +119,10 @@ def ove_alive():
 def ove_get_requests():
     return overseerr.get_requests()
 
+@router.post("/overseerr/get_movie_poster_url")
+def ove_get_movie_poster_url(data: APIModel):
+    return db.get_movie_poster_url_and_cache(data.key)
+
 # ---------------------------------------- #
 #                   SMTP                   #
 # ---------------------------------------- #
@@ -114,7 +138,6 @@ def smtp_set_host(data: APIModel):
 @router.get("/smtp/port")
 def smtp_port():
     test = smtp.port()
-    print(test)
     return test
 
 @router.post("/smtp/set_port")
@@ -179,6 +202,10 @@ def populate_movies():
 def link_tautulli():
     return db.link_tautulli()
 
+@router.get("/link_overseerr")
+def link_overseerr():
+    return db.link_overseerr()
+
 @router.get("/get_users")
 def get_users():
     return db.get_users()
@@ -187,6 +214,26 @@ def get_users():
 def get_admins():
     return db.get_admins()
 
+@router.post("/set_admins")
+def set_admins(data: ListModel):
+    return db.set_admins(data.key)
+
 @router.post("/remove_admin")
 def remove_admin(data: APIModel):
     return db.remove_admin(data.key)
+
+@router.post("/add_admin")
+def add_admin(data: APIModel):
+    return db.add_admin(data.key)
+
+@router.get("/get_server_name")
+def get_server_name():
+    return server.get_server_name()
+
+@router.post("/set_server_name")
+def set_server_name(data: APIModel):
+    return server.set_server_name(data.key)
+
+@router.get("/get_unsubscribe_lists")
+def get_unsubscribe_lsits():
+    return server.get_unsubscribe_lists()

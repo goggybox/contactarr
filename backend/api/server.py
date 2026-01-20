@@ -20,3 +20,24 @@
 # Please keep this header comment in all copies of the program.
 # --------------------------------------------------------------------
 
+import os
+import requests
+from datetime import datetime, timedelta
+from dotenv import load_dotenv
+from backend.api.cache import apiGet, clearCache
+from backend.api import config
+
+def get_server_name():
+    cnf = config.get_server_config()
+    return cnf['name']
+
+def set_server_name(val: str):
+    return config.set_config_value("SERVER_NAME", val)
+
+def get_unsubscribe_lists():
+    cnf = config.get_server_config()
+    return cnf['unsubscribe_lists']
+
+def set_unsubscribe_lists(lst: list):
+    strVal = ','.join(lst)
+    return config.set_config_value("UNSUBSCRIBE_LISTS", strVal)
