@@ -53,15 +53,15 @@ async function initServerSettings() {
     completeAdminUserSelect();
 }
 
-function initAddRow() {
+function initAddRow(elemId, dropdownId) {
     // delete if exists
-    if (document.getElementById("add-row")) { document.getElementById("add-row").remove(); }
+    if (document.getElementById(`add-row-${elemId}`)) { document.getElementById(`add-row-${elemId}`).remove(); }
 
     // row with "Add..." text (and dropdown button)
-    const adminSelector = document.getElementById("admin-selector");
+    const adminSelector = document.getElementById(elemId);
     // var for if the dropdown is currently open
     const dropdownCurrentlyOpen = adminSelector.classList.contains("dropdown");
-    const addRow = cr("div", "add-row");
+    const addRow = cr("div", `add-row-${elemId}`);
     if (admins.length > 3) { addRow.classList.add("top-shadow"); } // show shadow to indicate scrolling
     if (dropdownCurrentlyOpen) { addRow.classList.add("bottom-shadow"); } // bottom shadow when dropdown open
     // add-text
@@ -77,9 +77,9 @@ function initAddRow() {
     addRow.appendChild(dropdownButton);
     // dropdown-button EVENT LISTENER
     dropdownButton.addEventListener("click", () => {
-        let adminSelector = document.getElementById("admin-selector");
+        let adminSelector = document.getElementById(elemId);
         adminSelector.classList.toggle("dropdown");
-        let adminDropdown = document.getElementById("admin-dropdown");
+        let adminDropdown = document.getElementById(dropdownId);
         adminDropdown.classList.toggle("dropdown");
         completeAdminUserSelect();
     });
@@ -272,7 +272,7 @@ function completeAdminUserSelect() {
     }
 
     // row with "Add..." text (and dropdown button)
-    initAddRow();
+    initAddRow("admin-selector", "admin-dropdown");
 
     // add list of users to add as admins
     initAddAdminsList();
@@ -296,6 +296,10 @@ function addListAdderButton() {
     container.appendChild(btn);
 }
 
+
+const list_name_map = {
+    "newly_released_content_updates_unsubscribe_list": "Newly Released Content"
+}
 async function initUnsubscribeLists() {
     const res = await fetch("/backend/get_unsubscribe_lists");
     const lists = await res.json();
@@ -303,34 +307,42 @@ async function initUnsubscribeLists() {
     const parent = document.getElementById("unsubscribe-list-selector");
 
     // add existing unsubscribe lists if there are any
-    if (lists.length > 0) {
-        const selector = cr("div", "selector", null);
+    for (const [index, list] of lists.entries()) {
+        const selector = cr("div", "selector", list+"_selector");
+        const translateAmount = 2 * (index);
+
+        // translate to account for double borders of each selector
+        selector.style.transform = `translateY(-${translateAmount}px)`;
+
+        const listName = cr("p", null, null);
+        listName.textContent = list_name_map[list] || list;
+        selector.appendChild(listName);
         parent.appendChild(selector);
     }
 
-    // add box to enter new unsubscribe list in
-    const list_adder = cr("div", "list-adder", "unsubscribe-list-adder");
-    const listAdderInp = cr("input", "connection-input-box", "list-adder-text");
-    listAdderInp.placeholder="Enter new unsubscribe list name...";
-    listAdderInp.addEventListener("input", (e) => {
-        const par = document.getElementById("unsubscribe-list-selector");
-        if (e.target.value !== "") {
-            par.classList.add("typing-new-list");
-        } else {
-            par.classList.remove("typing-new-list");
-        }
-        addListAdderButton();
-    });
-    listAdderInp.addEventListener("focus", () => {
-        const la = document.getElementById("unsubscribe-list-adder");
-        la.classList.add("active");
-    });
-    listAdderInp.addEventListener("blur", () => {
-        const la = document.getElementById("unsubscribe-list-adder");
-        la.classList.remove("active");
-    });
-    list_adder.appendChild(listAdderInp);
-    parent.appendChild(list_adder);
+    // // add box to enter new unsubscribe list in
+    // const list_adder = cr("div", "list-adder", "unsubscribe-list-adder");
+    // const listAdderInp = cr("input", "connection-input-box", "list-adder-text");
+    // listAdderInp.placeholder="Enter new list name...";
+    // listAdderInp.addEventListener("input", (e) => {
+    //     const par = document.getElementById("unsubscribe-list-selector");
+    //     if (e.target.value !== "") {
+    //         par.classList.add("typing-new-list");
+    //     } else {
+    //         par.classList.remove("typing-new-list");
+    //     }
+    //     addListAdderButton();
+    // });
+    // listAdderInp.addEventListener("focus", () => {
+    //     const la = document.getElementById("unsubscribe-list-adder");
+    //     la.classList.add("active");
+    // });
+    // listAdderInp.addEventListener("blur", () => {
+    //     const la = document.getElementById("unsubscribe-list-adder");
+    //     la.classList.remove("active");
+    // });
+    // list_adder.appendChild(listAdderInp);
+    // parent.appendChild(list_adder);
 }
 
 window.onload = async function() {
@@ -348,7 +360,7 @@ window.onload = async function() {
     initServerSettings();
     initUnsubscribeLists();
 
-    const r = await this.fetch("/backend/link_tautulli");
+    const r = await this.fetch("/backend/tvdb/validate_token");
     const t = await r.json();
     console.log(t); 
 }

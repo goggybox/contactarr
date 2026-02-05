@@ -1,0 +1,93 @@
+<!-- 
+
+-----------------------------contactarr------------------------------
+This file is part of contactarr
+Copyright (C) 2025 goggybox https://github.com/goggybox
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+that this program is licensed under. See LICENSE file. If not
+available, see <https://www.gnu.org/licenses/>.
+
+Please keep this header comment in all copies of the program.
+--------------------------------------------------------------------
+
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>contactarr</title>
+  <link rel="stylesheet" href="sidebar.css">
+  <link rel="stylesheet" href="content.css">
+  <link rel="stylesheet" href="global.css">
+  <link rel="icon" href="contactarr.png">
+  <link rel="stylesheet" href="/modals/notification/notification.css">
+  <link rel="stylesheet" href="/pages/automated/automated.css">
+  <link rel="stylesheet" href="/emails/server/server.css">
+</head>
+<body>
+  <div class="sidebar">
+    <div class="header">
+      <h2>contact<span id="arr">arr</span></h2>
+    </div>
+    <nav id="sidebar-content">
+      <ul>
+        <li onclick="goToDashboard()"><a href="/">Dashboard</li>
+        <li class="active" onclick="goToAutomated()"><a href="/automated">Automated Emails</li>
+        <li onclick="goToSettings()"><a href="/settings">Settings</a></li>
+      </ul>
+    </nav>
+  </div>
+  <div class="content-wrapper">
+    <div class="content">
+        <h2 id="automated-emails-header">Automated Emails</h2>
+        <p id="automated-emails-desc">
+            Here you can enabled automated email services.
+        </p>
+        <div class="automated-service-container">
+            <div class="checkbox-container">
+                <input type="checkbox" class="checkbox" id="newly_released_content_checkbox">
+                <label for="newly_released_content_checkbox">Newly Released Content Updates</label>
+            </div>
+            <div class="automated-service-desc">
+                <p>
+                    If enabled, users will receive an email once weekly to notify them of new episodes of
+                    shows they have previously watched. Emails are sent every Sunday at noon. If a user
+                    has no new content, they will not receive emails. If there is a new episode of
+                    a show they have watched, and they have already watched the new episode, they will
+                    not receive an email about it.
+                </p>
+            </div>
+        </div>
+        <div class="automated-service-container">
+            <div class="checkbox-container">
+                <input type="checkbox" class="checkbox" id="request_for_unreleased_content_checkbox">
+                <label for="request_for_unreleased_content_checkbox">Request for Unreleased Content</label>
+            </div>
+            <div class="automated-service-desc">
+                <p>
+                    If enabled, users will receive an email when they request content on Overseerr that is
+                    not yet released. Users may often request movies that are only released in cinemas, and
+                    are not available on streaming services. These automated emails will alert them to this
+                    fact.
+                </p>
+            </div>
+        </div>
+    </div>
+  </div>
+
+  <script src="nav.js"></script>
+  <script type="module" src="/pages/automated/automated.js"></script>
+</body>
+</html>

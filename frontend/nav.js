@@ -24,6 +24,10 @@
     window.location.href = "/";
   }
 
+  function goToAutomated() {
+    window.location.href = "/automated";
+  }
+
   function goToSettings() {
     window.location.href = "/settings";
   }

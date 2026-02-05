@@ -99,11 +99,25 @@ def get_tvdb_config():
     """get fresh TVdb configuration"""
     return {
         'api_key': get_config_value('TVDB_API_KEY'),
-        'api_url': get_config_value('TVDB_API_URL', 'https://api.thetvdb.com'),
+        'api_url': get_config_value('TVDB_API_URL', 'https://api.thetvdb.com/v4'),
+        'api_token': get_config_value('TVDB_TOKEN')
     }
 
 def get_server_config():
     return {
         'name': get_config_value('SERVER_NAME'),
         'unsubscribe_lists': [x for x in (get_config_value('UNSUBSCRIBE_LISTS') or '').split(",") if x],
+    }
+
+def get_or_init_config_vlaue(key):
+    value = get_config_value(key)
+    if value is None:
+        set_config_value(key, 0)
+        return 0
+    return value
+
+def get_automated_emails_config():
+    return {
+        'newly_released_content': get_or_init_config_vlaue('NEWLY_RELEASED_CONTENT_UPDATES'),
+        'request_for_unreleased_content': get_or_init_config_vlaue('REQUEST_FOR_UNRELEASED_CONTENT')
     }

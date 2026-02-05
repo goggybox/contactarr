@@ -25,7 +25,9 @@ from fastapi import APIRouter
 from backend.api import tautulli
 from backend.api import overseerr
 from backend.api import smtp
+from backend.api import tvdb
 from backend.api import server
+from backend.api import automated
 from backend.db import db
 from fastapi.responses import PlainTextResponse
 
@@ -183,6 +185,44 @@ def smtp_send_email(data: SMTPSenderRecipientModel):
     return smtp.send_test_email(data.sender, data.recipient)
 
 # ---------------------------------------- #
+#                   TVDB                   #
+# ---------------------------------------- #
+
+@router.get("/tvdb/validate_token")
+def tvdb_validate_token():
+    return tvdb.validate_token()
+
+@router.get("/tvdb/get_new_token")
+def tvdb_get_new_token():
+    return tvdb.get_new_token()
+
+# ---------------------------------------- #
+#             AUTOMATED EMAILS             #
+# ---------------------------------------- #
+
+@router.get("/automated/get_newly_released_content_setting")
+def auto_get_newly_released_content_setting():
+    return automated.get_newly_released_content_setting()
+
+@router.post("/automated/set_newly_released_content_setting")
+def auto_set_newly_released_content_setting(data: APIModel):
+    return automated.set_newly_released_content_setting(data.key)
+
+@router.get("/automated/get_request_for_unreleased_content_setting")
+def auto_get_request_for_unreleased_content_setting():
+    return automated.get_request_for_unreleased_content_setting()
+
+@router.post("/automated/set_request_for_unreleased_content_setting")
+def auto_set_request_for_unreleased_content_setting(data: APIModel):
+    return automated.set_request_for_unreleased_content_setting(data.key)
+
+# get all automated email settings
+@router.get("/automated/get_automated_email_settings")
+def auto_get_automated_email_settings():
+    return automated.get_automated_email_settings()
+
+
+# ---------------------------------------- #
 #                  OTHER                   #
 # ---------------------------------------- #
 
@@ -236,4 +276,4 @@ def set_server_name(data: APIModel):
 
 @router.get("/get_unsubscribe_lists")
 def get_unsubscribe_lsits():
-    return server.get_unsubscribe_lists()
+    return db.get_unsubscribe_lists()

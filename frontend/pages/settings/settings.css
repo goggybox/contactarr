@@ -56,7 +56,7 @@ Please keep this header comment in all copies of the program.
 
 #unsubscribe-list {
     display: grid;
-    grid-template-columns: 45% 55%;
+    grid-template-columns: 35% 65%;
     column-gap: 15px;
     padding-top: 15px;
 }
@@ -66,10 +66,22 @@ Please keep this header comment in all copies of the program.
 }
 
 .selector {
-    margin-top: 5px;
+    margin-top: 0px;
     background: var(--primary-input-box-colour);
     min-height: 36px;
+    margin-bottom: 0px;
     border: 2px solid var(--secondary-background-colour);
+    position: relative;
+    z-index: 1;
+    display: flex;
+    place-items: center;
+    padding: 0 10px;
+    user-select: none;
+    cursor: pointer;
+}
+.selector:hover {
+    z-index: 2;
+    border: 2px solid var(--primary-accent-colour);
 }
 
 .selector-item {
@@ -109,6 +121,26 @@ Please keep this header comment in all copies of the program.
 
 .list {
     grid-column: 2;
+}
+
+/* user list */
+
+.user-list {
+    max-height: 300px;
+    background: var(--primary-input-box-colour);
+    min-height: 36px;
+    margin-bottom: 0px;
+    border: 2px solid var(--secondary-background-colour);
+    padding: 0 10px;
+    overflow-y: scroll;
+}
+
+#user-list-select-desc {
+    font-style: italic;
+    height: 36px;
+    color: var(--tertiary-text-colour);
+    place-content: center;
+    margin: 0;
 }
 
 /*
