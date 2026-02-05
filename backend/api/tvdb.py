@@ -20,6 +20,78 @@
 # Please keep this header comment in all copies of the program.
 # --------------------------------------------------------------------
 
-def get_tvdb_status():
-    # Placeholder for real TVDB API call
-    return {"status": "ok", "service": "tvdb"}
+import os
+import requests
+from datetime import datetime, timedelta
+from dotenv import load_dotenv
+from backend.api.cache import apiGet, clearCache
+from backend.api import config
+
+def getFromAPI(cmd, args=None, forceFresh=False):
+    cnf = config.get_tvdb_config()
+    api_key = cnf['api_key']
+    api_url = cnf['api_url'].rstrip("/") # avoid double slashes
+    api_token = cnf['api_token']
+
+    if not api_key or not api_url:
+        return None
+
+    url = f"{api_url}/{cmd.lstrip('/')}" # avoid double slashes
+    headers = {
+        "Authorization": f"Bearer {api_token}"
+    }
+    params = args or {}
+
+    try:
+        data = apiGet(url=url, headers=headers, params=params, forceFresh=forceFresh)
+
+        if data:
+            if data.get("results"):
+                return data["results"]
+            else:
+                return data
+    except Exception as e:
+        return None
+
+def validate_token():
+    cnf = config.get_tvdb_config()
+    api_url = cnf['api_url'].rstrip("/")
+    api_token = cnf['api_token']
+    headers = {
+        "Authorization": f"Bearer {api_token}"
+    }
+    print(headers)
+    response = requests.get(f"{api_url}/languages", headers=headers)
+    if response.status_code == 200:
+        print("VALID")
+        return True
+    else:
+        print("INVALID")
+        return False
+
+def get_new_token():
+    cnf = config.get_tvdb_config()
+    api_url = cnf['api_url'].rstrip("/")
+    api_key = cnf['api_key']
+    payload = {
+        "apikey": api_key
+    }
+    headers = {
+        "Content-Type": "application/json"
+    }
+
+    response = requests.post(f"{api_url}/login", json=payload, headers=headers)
+    
+    if response:
+        token = response.json()["data"]["token"]
+        if not token:
+            return None
+
+        config.set_config_value("TVDB_TOKEN", token)
+
+        return token
+    
+    return None
+
+# def get_tvdb_status():
+    

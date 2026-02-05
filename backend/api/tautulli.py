@@ -126,6 +126,13 @@ def get_shows():
 
     return total_shows
 
+def get_seasons(rating_key):
+    seasons = getFromAPI("get_library_media_info", [{"rating_key": rating_key}])
+
+    if seasons and seasons.get("data") and seasons["data"].get("data"):
+        return seasons["data"]["data"]
+
+
 def get_users():
     # get the first 5 attributes from the /get_users endpoint
     users = getFromAPI("get_users")
@@ -218,7 +225,7 @@ def get_users():
     return filtered_users
 
 def get_episode_watch_history(user_id):
-    history = getFromAPI("get_history", [{"user_id": user_id}, {"media_type": "episode"}, {"length": 9999999}])
+    history = getFromAPI("get_history", [{"user_id": user_id}, {"media_type": "episode"}, {"length": 999999999}])
     if not history:
         return None
     
@@ -226,7 +233,7 @@ def get_episode_watch_history(user_id):
         return history["data"]["data"]
 
 def get_movie_watch_history(user_id):
-    history = getFromAPI("get_history", [{"user_id": user_id}, {"media_type": "movie"}, {"length": 9999999}])
+    history = getFromAPI("get_history", [{"user_id": user_id}, {"media_type": "movie"}, {"length": 999999999}])
     if not history:
         return None
 

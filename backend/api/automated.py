@@ -20,23 +20,24 @@
 # Please keep this header comment in all copies of the program.
 # --------------------------------------------------------------------
 
-import os
-import requests
-from datetime import datetime, timedelta
-from dotenv import load_dotenv
-from backend.api.cache import apiGet, clearCache
 from backend.api import config
 
-def get_server_name():
-    cnf = config.get_server_config()
-    return cnf['name']
+def get_newly_released_content_setting():
+    cnf = config.get_automated_emails_config()
+    return cnf["newly_released_content"]
 
-def set_server_name(val: str):
-    return config.set_config_value("SERVER_NAME", val)
+def set_newly_released_content_setting(val):
+    return config.set_config_value("NEWLY_RELEASED_CONTENT_UPDATES", val)
 
-# def get_unsubscribe_lists():
-    # ^ this is implemented in db/db.py
+def get_request_for_unreleased_content_setting():
+    cnf = config.get_automated_emails_config()
+    return cnf["request_for_unreleased_content"]
 
-def set_unsubscribe_lists(lst: list):
-    strVal = ','.join(lst)
-    return config.set_config_value("UNSUBSCRIBE_LISTS", strVal)
+def set_request_for_unreleased_content_setting(val):
+    return config.set_config_value("REQUEST_FOR_UNRELEASED_CONTENT", val)
+
+
+# get all
+def get_automated_email_settings():
+    cnf = config.get_automated_emails_config()
+    return cnf

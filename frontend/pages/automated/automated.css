@@ -1,0 +1,59 @@
+/* 
+
+-----------------------------contactarr------------------------------
+This file is part of contactarr
+Copyright (C) 2025 goggybox https://github.com/goggybox
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+that this program is licensed under. See LICENSE file. If not
+available, see <https://www.gnu.org/licenses/>.
+
+Please keep this header comment in all copies of the program.
+--------------------------------------------------------------------
+
+*/
+
+#automated-emails-header {
+    margin-bottom: 15px;
+}
+
+#automated-emails-desc {
+    margin-bottom: 25px;
+}
+
+.automated-service-container {
+    margin: 25px 0;
+    width: 800px;
+}
+
+input[type="checkbox"] {
+    width: 17px;
+    height: 17px;
+    cursor: pointer;
+}
+
+.automated-service-container label {
+    font-weight: 600;
+    padding-left: 10px;
+    user-select: none;
+    cursor: pointer;
+}
+
+.automated-service-desc {
+    margin-left: 8px;
+    padding-left: 22px;
+    padding-top: 13px;
+    border-left: 1px solid var(--primary-background-highlighted-colour);
+    user-select: none;
+    color: var(--tertiary-text-colour);
+}

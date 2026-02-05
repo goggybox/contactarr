@@ -44,6 +44,7 @@ Please keep this header comment in all copies of the program.
     <nav id="sidebar-content">
       <ul>
         <li class="active" onclick="goToDashboard()"><a href="/">Dashboard</li>
+        <li onclick="goToAutomated()"><a href="/automated">Automated Emails</li>
         <li onclick="goToSettings()"><a href="/settings">Settings</a></li>
       </ul>
     </nav>
@@ -65,7 +66,7 @@ Please keep this header comment in all copies of the program.
         </div>
       </div>
       <div class="email-container" id="email-container">
-        <h2>Email</h2>
+        <h2>Manual Email</h2>
         <div class="email-selector">
           <p class="selector selected" id="server-selector" onclick="serverSelected()">Your Server</p>
           <p class="selector" id="overseerr-selector" onclick="overseerrSelected()">Overseerr</p>

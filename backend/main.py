@@ -45,6 +45,10 @@ def dashboard():
 def connections():
     return FileResponse("frontend/pages/connections/connections.html")
 
+@app.get("/automated")
+def automated():
+    return FileResponse("frontend/pages/automated/automated.html")
+
 @app.get("/settings")
 def connections():
     return FileResponse("frontend/pages/settings/settings.html")
