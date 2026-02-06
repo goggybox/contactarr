@@ -812,16 +812,66 @@ def add_admin(username):
     return False
 
 def get_unsubscribe_lists():
+    """
+    returns an array of each table in the database
+    whose name ends with "_unsubscribe_list".
+    * JOINS to the `users` table to get the username and
+      friendly_name for each user.
+
+    resulting array has structure:
+    [
+        {
+            'table_name': '...',
+            'rows': [
+                {'user_id': ..., 'added_at': ...},
+                ...
+            ]
+        },
+        {
+            ...
+        }
+    ]
+    """
+
     with get_connection() as conn:
         cur = conn.cursor()
+
+        # get table names
         cur.execute("""
             SELECT name
             FROM sqlite_master
             WHERE type = 'table'
             AND name LIKE '%_unsubscribe_list'
         """)
-        res = [row[0] for row in cur.fetchall()]
-        return res
+        table_names = [row[0] for row in cur.fetchall()]
+
+        # fetch rows from each table
+        result = []
+        for table_name in table_names:
+            cur.execute(f'''
+                SELECT 
+                    u.user_id,
+                    u.added_at,
+                    usr.username,
+                    usr.friendly_name
+                FROM "{table_name}" u
+                JOIN users usr ON u.user_id = usr.user_id
+            ''')
+            rows = cur.fetchall()
+            result.append({
+                'table_name': table_name,
+                'rows': [
+                    {
+                        'user_id': row[0],
+                        'added_at': row[1],
+                        'username': row[2],
+                        'friendly_name': row[3]
+                    }
+                    for row in rows
+                ]
+            })
+
+        return result
 
 def init_db():
     with get_connection() as conn:
@@ -959,13 +1009,13 @@ def init_db():
         conn.execute("""
             CREATE TABLE IF NOT EXISTS newly_released_content_updates_unsubscribe_list (
                 user_id INTEGER NOT NULL REFERENCES users(user_id),
-                added_at INTEGER NOT NULL
+                added_at INTEGER NOT NULL DEFAULT (unixepoch())
             );
         """)
 
         conn.execute("""
-            CREATE TABLE IF NOT EXISTS request_for_unreleased_content_unsubscribe_list (
+            CREATE TABLE IF NOT EXISTS system_updates_unsubscribe_list (
                 user_id INTEGER NOT NULL REFERENCES users(user_id),
-                added_at INTEGER NOT NULL
+                added_at INTEGER NOT NULL DEFAULT (unixepoch())
             );
         """)

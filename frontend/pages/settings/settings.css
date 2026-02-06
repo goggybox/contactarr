@@ -98,6 +98,11 @@ Please keep this header comment in all copies of the program.
     border: 2px solid var(--secondary-accent-colour);
 }
 
+#admin-users-text { /* the title "Admin Users" to the left of the selector */
+    align-self: start;
+    margin-top: 5px;
+}
+
 .list-adder-button {
     width: 48px;
     display:flex;

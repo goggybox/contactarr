@@ -23,14 +23,8 @@ Please keep this header comment in all copies of the program.
 
 */
 
-#admin-users-text { /* the title "Admin Users" to the left of the selector */
-    align-self: start;
-    margin-top: 5px;
-}
-
 .users-selector { /* outermost container for the list of users in the "Admin Users" sections */
     position: relative;
-    grid-column: 2;
     width: 400px;
     min-height: 36px;
     color: var(--primary-text-colour);
@@ -53,7 +47,7 @@ Please keep this header comment in all copies of the program.
     z-index: 1;
 }
 
-#admin-dropdown { /* container for the list of users in the dropdown */
+.user-dropdown { /* container for the list of users in the dropdown */
     display: none;
     grid-template-columns: 1fr max-content;
     background: var(--primary-input-box-colour);
@@ -64,7 +58,7 @@ Please keep this header comment in all copies of the program.
     border-top: 0px;
     box-shadow: rgba(0, 0, 0, 0.25) 0px 54px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px;
 }
-#admin-dropdown.dropdown {
+.user-dropdown.dropdown {
     display: grid;
 }
 
