@@ -19,12 +19,8 @@
 
 // Please keep this header comment in all copies of the program.
 // --------------------------------------------------------------------
-let users;
-let users_init;
-let admins;
-let admins_init;
-let serverName;
 
+// -------------------- utilities functions --------------------
 function cr(type, clss, id) {
     const elem = document.createElement(type);
     if (clss) { elem.classList.add(clss); }
@@ -32,70 +28,36 @@ function cr(type, clss, id) {
     return elem;
 }
 
+const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+// -------------------- SERVER SETTINGS --------------------
+let serverName, serverNameInit;
+let admins, adminsInit;
+let adminSelector;
+
 async function initServerSettings() {
-    // server name
-    const container = document.getElementById("server-name-input-box");
+    const input = document.getElementById("server-name-input-box");
     const res = await fetch("/backend/get_server_name");
     serverName = await res.json();
-    if (serverName) {
-        container.value = serverName;
+    serverNameInit = serverName;
 
-        // rename the section from "Your Server" to the name
+    if (serverName) {
+        input.value = serverName;
         const title = document.getElementById("server-section-name");
         title.textContent = `Your Server (${serverName})`;
     }
-    // add listener to input box
-    container.addEventListener("input", () => {
-        serverSettingsListener();
-    });
 
-    // admin users
-    completeAdminUserSelect();
+    input.addEventListener("input", checkForChanges);
+
+    initUnsubscribeLists();
 }
 
-function initAddRow(elemId, dropdownId) {
-    // delete if exists
-    if (document.getElementById(`add-row-${elemId}`)) { document.getElementById(`add-row-${elemId}`).remove(); }
-
-    // row with "Add..." text (and dropdown button)
-    const adminSelector = document.getElementById(elemId);
-    // var for if the dropdown is currently open
-    const dropdownCurrentlyOpen = adminSelector.classList.contains("dropdown");
-    const addRow = cr("div", `add-row-${elemId}`);
-    if (admins.length > 3) { addRow.classList.add("top-shadow"); } // show shadow to indicate scrolling
-    if (dropdownCurrentlyOpen) { addRow.classList.add("bottom-shadow"); } // bottom shadow when dropdown open
-    // add-text
-    const p = cr("p", "add-text", null);
-    p.textContent="Add...";
-    addRow.appendChild(p);
-    // dropdown-button
-    const dropdownButton = cr("div", "dropdown-button", null);
-    const dropdownChevron = cr("p", "dropdown-chevron", null);
-    dropdownChevron.textContent = dropdownCurrentlyOpen ? "⌃" : "⌄";
-    dropdownChevron.classList.toggle("dropdown", !!dropdownCurrentlyOpen);
-    dropdownButton.appendChild(dropdownChevron);
-    addRow.appendChild(dropdownButton);
-    // dropdown-button EVENT LISTENER
-    dropdownButton.addEventListener("click", () => {
-        let adminSelector = document.getElementById(elemId);
-        adminSelector.classList.toggle("dropdown");
-        let adminDropdown = document.getElementById(dropdownId);
-        adminDropdown.classList.toggle("dropdown");
-        completeAdminUserSelect();
-    });
-    adminSelector.appendChild(addRow);
-}
-
-const equal = (a, b) =>
-    JSON.stringify(a) === JSON.stringify(b);
-
-function serverSettingsListener() {
-    // listener to determine, after any change to the settings, whether to show
-    // the Save/Cancel buttons.
-    const nameBox = document.getElementById("server-name-input-box");
+function checkForChanges() {
+    const input = document.getElementById("server-name-input-box");
+    const hasNameChange = input.value.trim() !== serverNameInit;
+    const hasAdminChange = !equal(admins, adminsInit);
     
-    const serverSettingsButtons = document.getElementById("server-settings-buttons");
-    if (nameBox.value.trim() !== serverName.trim() || !equal(admins, admins_init)) {
+    if (hasNameChange || hasAdminChange) {
         showSaveCancelButtons();
     } else {
         hideSaveCancelButtons();
@@ -103,30 +65,30 @@ function serverSettingsListener() {
 }
 
 function hideSaveCancelButtons() {
-    const serverSettingsButtons = document.getElementById("server-settings-buttons");
-    serverSettingsButtons.classList.add("hide");
+    document.getElementById("server-settings-buttons").classList.add("hide");
 }
+
 function showSaveCancelButtons() {
-    const serverSettingsButtons = document.getElementById("server-settings-buttons");
-    serverSettingsButtons.classList.remove("hide");
+    document.getElementById("server-settings-buttons").classList.remove("hide");
 }
+
 function serverSettingsCancel() {
-    // if the user clicks cancel, reset the namebox and admins list to original values.
-    const nameBox = document.getElementById("server-name-input-box");
-    nameBox.value = serverName;
-    admins = [...admins_init];
-    completeAdminUserSelect();
-    const serverSettingsButtons = document.getElementById("server-settings-buttons");
+    const input = document.getElementById("server-name-input-box");
+    input.value = serverNameInit;
+    admins = [...adminsInit];
+    adminSelector.reset(admins);
     hideSaveCancelButtons();
 }
-function serverSettingsSave() {
-    // save server name and/or admins list if updated
-    const nameBox = document.getElementById("server-name-input-box");
-    if (nameBox.value.trim() !== serverName.trim()) {
-        updateServerName(nameBox.value.trim());
+
+async function serverSettingsSave() {
+    const input = document.getElementById("server-name-input-box");
+    const newName = input.value.trim();
+    
+    if (newName !== serverNameInit) {
+        await updateServerName(newName);
     }
-    if (!equal(admins, admins_init)) {
-        updateAdminsList(admins);
+    if (!equal(admins, adminsInit)) {
+        await updateAdminsList(admins);
     }
     hideSaveCancelButtons();
 }
@@ -134,171 +96,28 @@ function serverSettingsSave() {
 async function updateAdminsList(list) {
     await fetch("/backend/set_admins", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            key: list
-        })  
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({key: list})  
     });
-    admins_init = [...admins];
+    adminsInit = [...admins];
 }
 
 async function updateServerName(name) {
     await fetch("/backend/set_server_name", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            key: name
-        })
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({key: name})
     });
+    serverNameInit = name;
     serverName = name;
     const title = document.getElementById("server-section-name");
     title.textContent = `Your Server (${serverName})`;
 }
 
-function initAddAdminsList() {
-    // delete if exists
-    if (document.getElementById("admin-dropdown")) { document.getElementById("admin-dropdown").remove(); }
-
-    const adminSelector = document.getElementById("admin-selector");
-
-    // admin-dropdown
-    const adminDropdown = cr("div", "user-dropdown", "admin-dropdown");
-    if (adminSelector.classList.contains("dropdown")) { adminDropdown.classList.add("dropdown"); }
-    adminSelector.appendChild(adminDropdown);
-
-    // only consider users who aren't already admins
-    const adminUsernames = admins.map(e => e["username"]);
-    const possibleUsers = users.filter(e => !adminUsernames.includes(e["username"]));
-    
-    // create a container for each such user
-    for (let i = 0; i < possibleUsers.length; i++) {
-        const user = possibleUsers[i];
-        // user-container
-        const userContainer = cr("div", "user-container", null);
-        if (i === possibleUsers.length-1) { userContainer.classList.add("last"); }
-        const friendlyName = cr("p", null, null);
-        friendlyName.textContent = user["friendly_name"];
-        friendlyName.style.fontWeight = '600';
-        userContainer.appendChild(friendlyName);
-        const username = cr("p", null, null);
-        username.textContent = `(${user["username"]})`;
-        userContainer.appendChild(username);
-        adminDropdown.appendChild(userContainer);
-
-        // add-button
-        const addButton = cr("div", "add-button", null);
-        const plus = cr("p", null, null);
-        plus.textContent = "+";
-        addButton.appendChild(plus);
-        adminDropdown.appendChild(addButton);
-
-        // add-button EVENT LISTENER
-        addButton.addEventListener("click", () => {
-            admins.push(user);
-            completeAdminUserSelect();
-            serverSettingsListener();
-            const e = document.getElementById("list-of-admins");
-            e.scrollTo(0, e.scrollHeight);
-        });
-        
-    }
-}
-
-function completeAdminUserSelect() {
-    /*
-
-    <users-selector> ID=admin-selector
-        <selector-list GRID>
-            <user-container>
-                //friendly_name,username
-            </user-container>
-            <remove-button/>
-        </selector-list>
-        <add-row>
-            <add-text/>
-            <dropdown-button>
-                <dropdown-chevron/>
-            </dropdown-button>
-        </add-row>
-        <admin-dropdown GRID>
-            <user-container>
-                //friendly_name,username
-            </user-container>
-            <add-button/>
-        </admin-dropdown>
-    </users-selector>
-
-    */
-
-    const adminSelector = document.getElementById("admin-selector");
-    adminSelector.innerHTML = ""; // clear it before repopulating
-    // list of users
-    if (admins.length > 0) {
-        const selectorList = cr("div", "selector-list", "list-of-admins");
-        for (let i = 0; i < admins.length; i++) {
-            let admin = admins[i];
-            // user-container
-            const userContainer = cr("div", "user-container", null);
-            if (i === admins.length-1) { userContainer.classList.add("last"); }
-                // friendly name
-            const friendlyname = cr("p", null, null);
-            friendlyname.textContent = admin["friendly_name"];
-            friendlyname.style.fontWeight = '600';
-            userContainer.appendChild(friendlyname);
-                // username
-            const username = cr("p",null,null);
-            username.textContent = `(${admin["username"]})`;
-            userContainer.appendChild(username);
-            selectorList.appendChild(userContainer);
-            // remove-button
-            const removeButton = cr("div", "remove-button", null);
-            if (i === admins.length-1) { removeButton.classList.add("last"); }
-            const p = cr("p", null, null);
-            p.textContent = "-";
-            removeButton.appendChild(p);
-            selectorList.appendChild(removeButton);
-            // remove-button EVENT LISTENER
-            removeButton.addEventListener("click", () => {
-                admins.splice(admins.indexOf(admin), 1);
-                completeAdminUserSelect();
-                serverSettingsListener();
-            });
-        }
-        adminSelector.appendChild(selectorList);
-    }
-
-    // row with "Add..." text (and dropdown button)
-    initAddRow("admin-selector", "admin-dropdown");
-
-    // add list of users to add as admins
-    initAddAdminsList();
-}
-
-function addListAdderButton() {
-    const parent = document.getElementById("unsubscribe-list-selector");
-    const existingButton = document.getElementById("unsubscribe-list-adder-button");
-    if (!parent.classList.contains("typing-new-list")){
-        if (existingButton) { existingButton.remove(); }
-        return; 
-    }
-    else if (existingButton) { return; }
-
-    console.log("ADDING");
-    const container = document.getElementById("unsubscribe-list-adder");
-    const btn = cr("div", "list-adder-button", "unsubscribe-list-adder-button");
-    const p = cr("p",null,null);
-    p.textContent = "+";
-    btn.appendChild(p);
-    container.appendChild(btn);
-}
-
 
 const list_name_map = {
-    "newly_released_content_updates_unsubscribe_list": "Newly Released Content"
+    "newly_released_content_updates_unsubscribe_list": "Newly Released Content",
+    "system_updates_unsubscribe_list": "System Updates"
 }
 async function initUnsubscribeLists() {
     const res = await fetch("/backend/get_unsubscribe_lists");
@@ -345,22 +164,24 @@ async function initUnsubscribeLists() {
     // parent.appendChild(list_adder);
 }
 
+// -------------------- on load function --------------------
 window.onload = async function() {
-    let res = await fetch("/backend/get_users");
-    users = await res.json();
-    users_init = [...users];
-    res = await fetch("/backend/get_admins");
-    admins = await res.json();
-    admins_init = [...admins];
+    const usersRes = await fetch("/backend/get_users");
+    const users = await usersRes.json();
+    const adminsRes = await fetch("/backend/get_admins");
+    admins = await adminsRes.json();
+    adminsInit = [...admins];
 
-    initTautulliURLInputBox();
-    initTautulliAPIInputBox();
-    initOverseerr();
-    initSMTPInputBoxes();
     initServerSettings();
-    initUnsubscribeLists();
 
-    const r = await this.fetch("/backend/tvdb/validate_token");
-    const t = await r.json();
-    console.log(t); 
+    adminSelector = new UserListSelector(
+        "admin-selector",
+        admins,
+        users,
+        (newList) => {
+            admins = newList;
+            checkForChanges();
+        },
+        "admin-dropdown"
+    );
 }
