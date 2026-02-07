@@ -34,6 +34,7 @@ export let selecting_users = false;
 export let selected_users = [];
 let users;
 let selected_email = "server";
+let systemUpdatesUnsubscribeList = [];
 
 // -------------------- text area functions --------------------
 
@@ -141,6 +142,7 @@ function createUserContainer(user, index, totalUsers) {
     checkbox.type = "checkbox";
     checkbox.classList.add("user-container-checkbox", "hidden");
     checkbox.textContent = user.username;
+    checkbox.dataset.userId = user.user_id;
     checkbox.addEventListener("click", () => clickUserCheckbox(checkbox));
     
     const containerInfo = document.createElement("div");
@@ -183,6 +185,21 @@ function createUserContainer(user, index, totalUsers) {
     return userContainer;
 }
 
+async function fetchUnsubscribeLists() {
+    try {
+        const res = await fetch("/backend/get_unsubscribe_lists");
+        if (res.status === 200) {
+            const lists = await res.json();
+            const systemUpdatesList = lists.find(l => l.table_name === "system_updates_unsubscribe_list");
+            if (systemUpdatesList) {
+                systemUpdatesUnsubscribeList = systemUpdatesList.rows.map(r => r.user_id);
+            }
+        }
+    } catch (error) {
+        console.error("Failed to fetch unsubscribe list: ", error);
+    }
+}
+
 function displayUsers(users) {
     const listContainer = document.getElementById("user-list");
     listContainer.innerHTML = "";
@@ -194,6 +211,8 @@ function displayUsers(users) {
     document.getElementById("server-select-users-button").addEventListener("click", function() {
         clickSelectUsersButton(this);
     });
+
+    document.getElementById("select-subscribed-users-button").addEventListener("click", selectSubscribedUsers);
 
     document.getElementById("select-all-users-button").addEventListener("click", selectAllUsers);
 
@@ -280,6 +299,7 @@ function clickSelectUsersButton(button) {
     });
     
     document.getElementById("select-users-buttons").classList.toggle("hidden", !selecting_users);
+    document.getElementById("user-list-desc").classList.toggle("hidden", !selecting_users);
 }
 
 function clickUserCheckbox(checkbox) {
@@ -296,12 +316,38 @@ function clickUserCheckbox(checkbox) {
 }
 
 function updateSelectUsersButtons() {
-    const checkboxes = document.querySelectorAll(".user-container-checkbox");
+    const checkboxes = Array.from(document.querySelectorAll(".user-container-checkbox"));
     const allSelected = Array.from(checkboxes).every(cb => cb.checked);
     const allUnselected = Array.from(checkboxes).every(cb => !cb.checked);
 
     document.getElementById("select-all-users-button").classList.toggle("selected", allSelected);
     document.getElementById("deselect-all-users-button").classList.toggle("unselected", allUnselected);
+
+    const subscribedCheckboxes = checkboxes.filter(cb => {
+        const userId = parseInt(cb.dataset.userId);
+        return !systemUpdatesUnsubscribeList.includes(userId);
+    });
+
+    const allSubscribedSelected = subscribedCheckboxes.length > 0 && subscribedCheckboxes.every(cb => cb.checked);
+    document.getElementById("select-subscribed-users-button").classList.toggle("selected", allSubscribedSelected);
+}
+
+function selectSubscribedUsers() {
+    document.querySelectorAll(".user-container-checkbox").forEach(cb => {
+        const userId = parseInt(cb.dataset.userId);
+        const isUnsubscribed = systemUpdatesUnsubscribeList.includes(userId);
+
+        if (!isUnsubscribed) {
+            cb.checked = true;
+            clickUserCheckbox(cb);
+        } else {
+            cb.checked = false;
+            const username = cb.textContent;
+            const idx = selected_users.indexOf(username);
+            if (idx > -1) { selected_users.splice(idx, 1); }
+        }
+    });
+    updateSelectUsersButtons();
 }
 
 function selectAllUsers() {
@@ -323,6 +369,8 @@ function deselectAllUsers() {
 
 window.onload = async function() {
     try {
+        await fetchUnsubscribeLists();
+
         const res = await fetch("/backend/tautulli/get_users");
 
         if (res.status !== 200) { throw new Error("Tautulli connection failed"); }
