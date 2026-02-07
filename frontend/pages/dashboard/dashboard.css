@@ -74,7 +74,7 @@ Please keep this header comment in all copies of the program.
 }
 
 #user-list-desc {
-    color: var(--quaternary-text-colour);
+    color: var(--primary-unsubscribed-user-colour);
     font-style: italic;
     font-size: 14px;
     padding: 0 5px;
@@ -170,24 +170,39 @@ MODIFIED TO APPLY TO HORIZONTAL EDGES
     font-weight: 600;
     font-size: 1.1em;
 }
+.name.unsubscribed.show {
+    color: var(--primary-unsubscribed-user-colour);
+}
 
 .username {
     color: var(--tertiary-text-colour);
     font-size: 1.1em;
 }
+.username.unsubscribed.show {
+    color: var(--secondary-unsubscribed-user-colour);
+}
 
 .email {
     color: var(--quaternary-text-colour);
+}
+.email.unsubscribed.show {
+    color: var(--tertiary-unsubscribed-user-colour);
 }
 
 .last-seen {
     font-size: 16px;
     color: var(--tertiary-text-colour);
 }
+.last-seen.unsubscribed.show {
+    color: var(--secondary-unsubscribed-user-colour);
+}
 
 .last-seen-date {
     font-size: 14px;
     color: var(--quaternary-text-colour);
+}
+.last-seen-date.unsubscribed.show {
+    color: var(--tertiary-unsubscribed-user-colour);
 }
 
 .user-right {

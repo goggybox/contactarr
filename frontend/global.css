@@ -82,4 +82,9 @@ html, body {
 
     --primary-border-radius: 12px;
     --secondary-border-radius: 20px;
+
+    /* unsubscribed user colours */
+    --primary-unsubscribed-user-colour: rgb(255, 69, 69);
+    --secondary-unsubscribed-user-colour: rgb(234, 60, 60);
+    --tertiary-unsubscribed-user-colour: rgb(207, 51, 51);
 }
