@@ -22,6 +22,8 @@
 
 from pydantic import BaseModel
 from fastapi import APIRouter
+from fastapi.responses import StreamingResponse
+from typing import List
 from backend.api import tautulli
 from backend.api import overseerr
 from backend.api import smtp
@@ -52,6 +54,12 @@ class SMTPSenderRecipientModel(BaseModel):
 class UnsubscribeListModel(BaseModel):
     table_name: str
     user_ids: list[int]
+
+class SendEmailRequest(BaseModel):
+    subject: str
+    html_body: str
+    recipients: List[str]
+    sender: str
 
 # ---------------------------------------- #
 #                 TAUTULLI                 #
@@ -187,6 +195,17 @@ def smtp_validate_recipient(data: APIModel):
 @router.post("/smtp/send_test_email")
 def smtp_send_email(data: SMTPSenderRecipientModel):
     return smtp.send_test_email(data.sender, data.recipient)
+
+@router.post("/smtp/send_email_stream")
+def send_email_stream(data: SendEmailRequest):
+    """
+    send individual emails to a list of recipients.
+    returns progress updates using SSEs.
+    """
+    return StreamingResponse(
+        smtp.send_email_stream(data.subject, data.html_body, data.recipients, data.sender),
+        media_type="text/event-stream"
+    )
 
 # ---------------------------------------- #
 #                   TVDB                   #

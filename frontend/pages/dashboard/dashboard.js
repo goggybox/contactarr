@@ -20,6 +20,7 @@
 // Please keep this header comment in all copies of the program.
 // --------------------------------------------------------------------
 
+import { buildEmailHtml, sendIndividualEmailsWithProgress } from "./emailSender.js";
 
 // -------------------- vars and consts --------------------
 const INDENT = "  ";
@@ -203,7 +204,6 @@ async function fetchUnsubscribeLists() {
             if (systemUpdatesList) {
                 systemUpdatesUnsubscribeList = systemUpdatesList.rows.map(r => r.user_id);
             }
-            console.log(systemUpdatesUnsubscribeList);
         }
     } catch (error) {
         console.error("Failed to fetch unsubscribe list: ", error);
@@ -314,7 +314,6 @@ function clickSelectUsersButton(button) {
     if (systemUpdatesUnsubscribeList.length > 0) {
         document.getElementById("user-list-desc").classList.toggle("hidden", !selecting_users);
         const unsubscribedUsers = document.querySelectorAll(".user-container.unsubscribed");
-        console.log(unsubscribedUsers);
         unsubscribedUsers.forEach(container => {
             // all children with the "unsubscribed" class, add the "show" class.
             const innerUnsubscribedElements = container.querySelectorAll(".unsubscribed");
@@ -323,6 +322,9 @@ function clickSelectUsersButton(button) {
             })
         })
     }
+
+    // show "SEND EMAIL" button
+    document.getElementById("send-email-button").classList.toggle("hidden", !selecting_users);
 }
 
 function clickUserCheckbox(checkbox) {
@@ -353,6 +355,10 @@ function updateSelectUsersButtons() {
 
     const allSubscribedSelected = subscribedCheckboxes.length > 0 && subscribedCheckboxes.every(cb => cb.checked);
     document.getElementById("select-subscribed-users-button").classList.toggle("selected", allSubscribedSelected);
+
+    // update SEND EMAIL button (must have at least 1 user selected to send)
+    const anySelected = checkboxes.some(cb => cb.checked);
+    document.getElementById("send-email-button").classList.toggle("disabled", !anySelected);
 }
 
 function selectSubscribedUsers() {
@@ -391,6 +397,109 @@ function deselectAllUsers() {
     selected_users = [];
 }
 
+// -------------------- send email --------------------
+
+async function sendEmail() {
+    // get selected users' email address
+    const selectedUserData = users.filter(u => selected_users.includes(u.username));
+    const recipientEmails = selectedUserData.map(u => u.email).filter(e => e && e !== "-");
+
+    if (recipientEmails.length === 0) {
+        console.log("No valid email addresses selected");
+        return;
+    }
+
+    const subject = document.getElementById("subjectInput").value;
+    if (!subject.trim()) {
+        showError("You must enter a valid sender address.");
+        console.log("No valid subject");
+        return;
+    }
+
+    const contentHtml = document.getElementById("htmlInput").value;
+    const footerHtml = document.getElementById("footerInput").value;
+    const fullHtml = buildEmailHtml(contentHtml, footerHtml);
+
+    const sender = document.getElementById("senderInput").value;
+
+    if (!sender) {
+        console.log("No sender");
+        return;
+    }
+
+    const confirmed = await showConfirm(
+        `Are you sure you want to send this email to ${recipientEmails.length}?\n\n` +
+        `Subject: ${subject}\n` +
+        `Sender: ${sender}`
+    );
+
+    if (!confirmed) { return; }
+
+    const progressContainer = document.createElement("div");
+    progressContainer.className = "email-progress-container";
+    progressContainer.innerHTML = `
+        <div class="email-progress-bar">
+            <div class="email-progress-fill" style="width: 0%"></div>
+        </div>
+        <p class="email-progress-text">Sending 0 of ${recipientEmails.length}...</p>
+        <p class="email-progress-status"></p>
+    `;
+    document.body.appendChild(progressContainer);
+
+    const progressFill = progressContainer.querySelector(".email-progress-fill");
+    const progressText = progressContainer.querySelector(".email-progress-text");
+    const progressStatus = progressContainer.querySelector(".email-progress-status");
+
+    const sendBtn = document.getElementById("send-email-button");
+    sendBtn.classList.add("disabled");
+
+    try {
+        const result = await sendIndividualEmailsWithProgress(
+            subject,
+            fullHtml,
+            recipientEmails,
+            sender,
+            {
+                onStart: (data) => {
+                    console.log(`Starting to send ${data.total} emails.`);
+                },
+                onProgress: (data) => {
+                    const percent = (data.current / data.total) * 100;
+                    progressFill.style.width = `${percent}%`;
+                    progressText.textContent = `Sending ${data.current} of ${data.total}...`;
+                    progressStatus.textContent = data.status === "success" ? `✓ ${data.recipient}` : `X ${data.recipient} (failed)`;
+                    progressStatus.className = data.status === "success" ? "email-progress-status success" : "email-progress-status error";
+                },
+                onComplete: (data) => {
+                    progressFill.style.width = "100%";
+                    progressText.textContent = `Complete! ${data.successful} sent, ${data.failed} failed`;
+                    setTimeout(() => {
+                        progressContainer.remove();
+                        if (data.failed === 0) {
+                            console.log(`Email sent successfully to ${data.successful} recipient(s)`);
+                            deselectAllUsers();
+                        } else if (data.successful > 0) {
+                            console.log(`Partial success: ${data.successful} sent, ${data.failed} failed.`);
+                        } else {
+                            console.log(`All emails failed to send.`);
+                        }
+                    }, 1000);
+                },
+                onError: (message) => {
+                    progressContainer.remove();
+                    console.log(`Failed: ${message}`);
+                }
+            }
+        );
+    } catch (error) {
+        progressContainer.remove();
+        console.log(`Failed to send emails: ${error.message}`);
+    } finally {
+        sendBtn.classList.remove("disabled");
+    }
+}
+
+
 // -------------------- init --------------------
 
 window.onload = async function() {
@@ -408,4 +517,7 @@ window.onload = async function() {
         console.error("Dashboard initialisation error: ", error);
         displayTautulliError();
     }
+
+    // add event listener to send email button
+    document.getElementById("send-email-button").addEventListener("click", sendEmail);
 }
