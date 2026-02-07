@@ -24,9 +24,14 @@ import os
 import requests
 import re
 import smtplib
+import json
 from email.message import EmailMessage
+from email.mime.text import MIMEText
+from email.mime.image import MIMEImage
+from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
+from fastapi.responses import StreamingResponse
 from backend.api.cache import apiGet, clearCache
 from backend.api import config
 
@@ -105,3 +110,88 @@ def send_test_email(sender, recipient):
         return {"status": 500}
 
     return {"status": 200}
+
+def send_email_stream(subject: str, html_body: str, recipients: list, sender: str):
+    """
+    sends individual emails to a list of recipients.
+    uses SSE events to return progress updates.
+    """
+    cnf = config.get_smtp_config()
+    total = len(recipients)
+    successful = 0
+    failed = 0
+    results = []
+
+    BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    SRC_DIR = os.path.dirname(BACKEND_DIR)
+    BANNER_PATH = os.path.join(SRC_DIR, "frontend", "emails", "server", "banner.png")
+    yield f"data: {json.dumps({'type': 'start', 'total': total})}\n\n"
+
+    try:
+        print(f"[EMAIL STREAM] Connecting to SMTP...")
+        with smtplib.SMTP(cnf['host'], cnf['port']) as smtp_conn:
+            print(f"[EMAIL STREAM] Connected, starting TLS...")
+            smtp_conn.starttls()
+            print(f"[EMAIL STREAM] TLS started, logging in...")
+            smtp_conn.login(cnf['user'], cnf['pass'])
+            print(f"[EMAIL STREAM] Logged in successfully")
+
+            for idx, recipient in enumerate(recipients, 1):
+                print(f"[EMAIL STREAM] Processing {idx}/{total}: {recipient}")
+                try:
+                    msg = MIMEMultipart('alternative')
+                    msg['Subject'] = subject
+                    msg['From'] = sender
+                    msg['To'] = recipient
+
+                    html_with_cid = html_body.replace('src="banner.png"', 'src="cid:banner_image"')
+                    msg_html = MIMEText(html_with_cid, 'html')
+                    msg.attach(msg_html)
+
+                    if os.path.exists(BANNER_PATH):
+                        with open(BANNER_PATH, 'rb') as img_file:
+                            img_data = img_file.read()
+                            img = MIMEImage(img_data)
+                            img.add_header('Content-ID', '<banner_image>')
+                            img.add_header('Content-Disposition', 'inline', filename='banner.png')
+                            msg.attach(img)
+
+                    smtp_conn.sendmail(sender, [recipient], msg.as_string())
+                    
+                    successful += 1
+                    result = {
+                        "type": "progress",
+                        "current": idx,
+                        "total": total,
+                        "recipient": recipient,
+                        "status": "success",
+                        "successful": successful,
+                        "failed": failed
+                    }
+                except Exception as e:
+                    failed += 1
+                    result = {
+                        "type": "progress",
+                        "current": idx,
+                        "total": total,
+                        "recipient": recipient,
+                        "status": "failed",
+                        "error": str(e),
+                        "successful": successful,
+                        "failed": failed
+                    }
+
+                # BUG FIX: 'resulst' -> 'results'
+                results.append(result)
+                yield f"data: {json.dumps(result)}\n\n"
+
+        print(f"[EMAIL STREAM] All done. Successful: {successful}, Failed: {failed}")
+        final_data = {'type': 'complete', 'total': total, 'successful': successful, 'failed': failed, 'results': results}
+        print(f"[EMAIL STREAM] Yielding complete: {final_data}")
+        yield f"data: {json.dumps(final_data)}\n\n"
+
+    except Exception as e:
+        print(f"[EMAIL STREAM] CRITICAL ERROR: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
