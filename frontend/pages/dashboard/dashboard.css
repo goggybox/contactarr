@@ -38,7 +38,7 @@ Please keep this header comment in all copies of the program.
     display: none;
 }
 
-#select-all-users-button, #deselect-all-users-button {
+#select-subscribed-users-button, #select-all-users-button, #deselect-all-users-button {
     cursor: pointer;
     user-select: none;
     width: fit-content;
@@ -51,7 +51,7 @@ Please keep this header comment in all copies of the program.
     font-weight: 600;
 }
 
-#select-all-users-button.selected, #deselect-all-users-button.unselected {
+#select-subscribed-users-button.selected, #select-all-users-button.selected, #deselect-all-users-button.unselected {
     background: var(--primary-input-box-colour);
     cursor: auto;
 }
@@ -71,6 +71,16 @@ Please keep this header comment in all copies of the program.
     padding: 0px;
     max-height: 800px;
     overflow-y: auto;
+}
+
+#user-list-desc {
+    color: var(--quaternary-text-colour);
+    font-style: italic;
+    font-size: 14px;
+    padding: 0 5px;
+}
+#user-list-desc.hidden {
+    display: none;
 }
 
 .user-container {
