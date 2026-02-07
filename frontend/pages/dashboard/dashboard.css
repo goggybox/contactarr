@@ -69,7 +69,7 @@ Please keep this header comment in all copies of the program.
     background-color: var(--primary-input-box-colour);
     border: 3px solid var(--secondary-background-colour);
     padding: 0px;
-    max-height: 900px;
+    max-height: 800px;
     overflow-y: auto;
 }
 
@@ -224,7 +224,7 @@ MODIFIED TO APPLY TO HORIZONTAL EDGES
 }
 
 #embed-container {
-    height: 550px;
+    height: 480px;
     background: var(--server-email-backdrop-colour);
     border: 3px solid var(--secondary-background-colour);
     margin: 10px;
@@ -239,7 +239,7 @@ MODIFIED TO APPLY TO HORIZONTAL EDGES
     padding-top: 15px;
 }
 
-#htmlInput {
+#htmlInput, #footerInput {
     margin-top: 5px;
     width: 100%;
     resize: none;
