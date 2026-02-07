@@ -49,6 +49,10 @@ class SMTPSenderRecipientModel(BaseModel):
     sender: str
     recipient: str
 
+class UnsubscribeListModel(BaseModel):
+    table_name: str
+    user_ids: list[int]
+
 # ---------------------------------------- #
 #                 TAUTULLI                 #
 # ---------------------------------------- #
@@ -275,5 +279,9 @@ def set_server_name(data: APIModel):
     return server.set_server_name(data.key)
 
 @router.get("/get_unsubscribe_lists")
-def get_unsubscribe_lsits():
+def get_unsubscribe_lists():
     return db.get_unsubscribe_lists()
+
+@router.post("/set_unsubscribe_list")
+def set_unsubscribe_list(data: UnsubscribeListModel):
+    return db.set_unsubscribe_list(data.table_name, data.user_ids)
