@@ -871,6 +871,43 @@ def get_unsubscribe_lists():
 
         return result
 
+def set_unsubscribe_list(table_name: str, user_ids: list):
+    """
+    replaces all rows in a given unsubscribe list table.
+    expects a list in JSON format:
+    {
+        "table_name": "newly_released_Content_updates_unsubscribe_list",
+        "user_ids": [..., ..., ...]
+    }
+    """
+    
+    if not table_name or not table_name.endswith('_unsubscribe_list'):
+        return False
+
+    with get_connection() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT name FROM sqlite_master
+            WHERE type = 'table' AND name = ?
+        """, (table_name,))
+        if not cur.fetchone():
+            return False
+        
+        # clear existing table!
+        cur.execute(f'DELETE FROM "{table_name}"')
+
+        current_time = int(time.time())
+        for user_id in user_ids:
+            cur.execute(f'''
+                INSERT INTO "{table_name}" (user_id, added_at)
+                VALUES (?, ?)
+            ''', (user_id, current_time))
+
+        conn.commit()
+    
+    return True
+
+
 def init_db():
     with get_connection() as conn:
         conn.execute("""

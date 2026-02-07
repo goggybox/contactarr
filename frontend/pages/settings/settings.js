@@ -304,6 +304,59 @@ function showUnsubscribeListSaveCancel() {
 
 function unsubscribeListsSave() {
     // `unsubscribeLists` variable needs to be saved back to storage.
+    // backend function /set_unsubscribe_list replaces an entire table with
+    // the new provided list
+    
+    // first identify which lists changed
+    console.log("SAVING LISTS...");
+    const changedLists = [];
+    for (const currentList of unsubscribeLists) {
+        const initialList = unsubscribeListsInit.find(l => l.table_name === currentList.table_name);
+        if (!initialList) {
+            // list doesn't exist in initial, shouldn't happen but add it?
+            changedLists.push(currentList);
+            continue;
+        }
+        // check if list has changed
+        const currentIds = new Set(currentList.rows.map(r => r.user_id));
+        const initialIds = new Set(initialList.rows.map(r => r.user_id));
+        // quick size check allows us to potentially skip detailed check
+        if (currentIds.size !== initialIds.size) {
+            changedLists.push(currentList);
+            continue;
+        }
+        // detailed IDs comparison
+        let hasChanges = false;
+        for (const id of currentIds) {
+            if (!initialIds.has(id)) {
+                hasChanges = true;
+                break;
+            }
+        }
+        if (hasChanges) { changedLists.push(currentList); }
+    }
+
+    // separate backend call for each changed list
+    const savePromises = changedLists.map(list => {
+        const userIds = list.rows.map(r => r.user_id);
+        return fetch("/backend/set_unsubscribe_list", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                table_name: list.table_name,
+                user_ids: userIds
+            })
+        });
+    });
+
+    Promise.all(savePromises).then(() => {
+        // update initial lists to match new, saved, lists.
+        unsubscribeListsInit = structuredClone(unsubscribeLists);
+        hideUnsubscribeListSaveCancel();
+        // don't need to refresh UserListSelector.
+    }).catch(err => {
+        console.error("Failed to save unsubscribe lists ! ", err);
+    });
 
 }
 
