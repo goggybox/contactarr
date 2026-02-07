@@ -39,7 +39,7 @@ let systemUpdatesUnsubscribeList = [];
 // -------------------- text area functions --------------------
 
 function getLineStart(text, index) {
-  return text.lastIndexOf("\n", index - 1) + 1;
+  return text.lastIndexOf("\n", index - 1) + 1; 
 }
 
 function getLineEnd(text, index) {
@@ -135,6 +135,10 @@ function createUserContainer(user, index, totalUsers) {
     userContainer.classList.add("user-container");
     if (index === totalUsers - 1) userContainer.id = "last";
 
+    // if user is in unsubscribed list, their name should be red when selecting users.
+    const isUnsubscribed = systemUpdatesUnsubscribeList.includes(parseInt(user.user_id));
+    if (isUnsubscribed) { userContainer.classList.add("unsubscribed"); }
+
     const userLeft = document.createElement("div");
     userLeft.classList.add("user-left");
     
@@ -154,16 +158,19 @@ function createUserContainer(user, index, totalUsers) {
     const name = document.createElement("p");
     name.textContent = user.friendly_name ?? "-";
     name.classList.add("name");
+    if (isUnsubscribed) { name.classList.add("unsubscribed"); } // make red when selecting
     
     const username = document.createElement("p");
     username.textContent = user.username ?? "-";
     username.classList.add("username");
+    if (isUnsubscribed) { username.classList.add("unsubscribed"); } // make red when selecting
     
     userName.append(name, username);
 
     const email = document.createElement("p");
     email.textContent = user.email ?? "-";
     email.classList.add("email");
+    if (isUnsubscribed) { email.classList.add("unsubscribed"); } // make red when selecting
 
     containerInfo.append(userName, email);
     userLeft.append(checkbox, containerInfo);
@@ -174,10 +181,12 @@ function createUserContainer(user, index, totalUsers) {
     const lastSeen = document.createElement("p");
     lastSeen.textContent = user.last_seen_formatted ? `Seen ${user.last_seen_formatted}` : "";
     lastSeen.classList.add("last-seen");
+    if (isUnsubscribed) { lastSeen.classList.add("unsubscribed"); } // make red when selecting
     
     const lastSeenDate = document.createElement("p");
     lastSeenDate.textContent = user.last_seen_date ?? "Never Seen";
     lastSeenDate.classList.add("last-seen-date");
+    if (isUnsubscribed) { lastSeenDate.classList.add("unsubscribed"); } // make red when selecting
     
     userRight.append(lastSeen, lastSeenDate);
     userContainer.append(userLeft, userRight);
@@ -194,6 +203,7 @@ async function fetchUnsubscribeLists() {
             if (systemUpdatesList) {
                 systemUpdatesUnsubscribeList = systemUpdatesList.rows.map(r => r.user_id);
             }
+            console.log(systemUpdatesUnsubscribeList);
         }
     } catch (error) {
         console.error("Failed to fetch unsubscribe list: ", error);
@@ -299,7 +309,20 @@ function clickSelectUsersButton(button) {
     });
     
     document.getElementById("select-users-buttons").classList.toggle("hidden", !selecting_users);
-    document.getElementById("user-list-desc").classList.toggle("hidden", !selecting_users);
+    
+    // show warning about unsubscribed users, only if there are any.
+    if (systemUpdatesUnsubscribeList.length > 0) {
+        document.getElementById("user-list-desc").classList.toggle("hidden", !selecting_users);
+        const unsubscribedUsers = document.querySelectorAll(".user-container.unsubscribed");
+        console.log(unsubscribedUsers);
+        unsubscribedUsers.forEach(container => {
+            // all children with the "unsubscribed" class, add the "show" class.
+            const innerUnsubscribedElements = container.querySelectorAll(".unsubscribed");
+            innerUnsubscribedElements.forEach(el => {
+                el.classList.toggle("show", selecting_users);
+            })
+        })
+    }
 }
 
 function clickUserCheckbox(checkbox) {
@@ -333,6 +356,9 @@ function updateSelectUsersButtons() {
 }
 
 function selectSubscribedUsers() {
+    // if all subscribed users are already selected, don't register a click
+    if (document.getElementById("select-subscribed-users-button").classList.contains("selected")) { return; }
+
     document.querySelectorAll(".user-container-checkbox").forEach(cb => {
         const userId = parseInt(cb.dataset.userId);
         const isUnsubscribed = systemUpdatesUnsubscribeList.includes(userId);
