@@ -823,7 +823,7 @@ def get_unsubscribe_lists():
         {
             'table_name': '...',
             'rows': [
-                {'user_id': ..., 'added_at': ...},
+                {'user_id': ..., 'username': ..., 'friendly_name': ...},
                 ...
             ]
         },
@@ -851,7 +851,6 @@ def get_unsubscribe_lists():
             cur.execute(f'''
                 SELECT 
                     u.user_id,
-                    u.added_at,
                     usr.username,
                     usr.friendly_name
                 FROM "{table_name}" u
@@ -863,9 +862,8 @@ def get_unsubscribe_lists():
                 'rows': [
                     {
                         'user_id': row[0],
-                        'added_at': row[1],
-                        'username': row[2],
-                        'friendly_name': row[3]
+                        'username': row[1],
+                        'friendly_name': row[2]
                     }
                     for row in rows
                 ]

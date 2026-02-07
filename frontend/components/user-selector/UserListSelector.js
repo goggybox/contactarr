@@ -179,7 +179,7 @@ class UserListSelector {
     }
 
     reset(newList) {
-        this.list = [...newList];
+        this.list = newList;
         this.isDropdownOpen = false;
         this.init();
     }
