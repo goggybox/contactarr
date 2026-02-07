@@ -34,8 +34,15 @@ const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 let serverName, serverNameInit;
 let admins, adminsInit;
 let adminSelector;
+let displayed_unsubscribe_list = "";
+let unsubscribeLists, unsubscribeListsInit;
+let unsubscribeUserSelector;
+const list_name_map = {
+    "newly_released_content_updates_unsubscribe_list": "Newly Released Content",
+    "system_updates_unsubscribe_list": "System Updates"
+}
 
-async function initServerSettings() {
+async function initServerSettings(users) {
     const input = document.getElementById("server-name-input-box");
     const res = await fetch("/backend/get_server_name");
     serverName = await res.json();
@@ -49,10 +56,18 @@ async function initServerSettings() {
 
     input.addEventListener("input", checkForChanges);
 
-    initUnsubscribeLists();
+    initUnsubscribeLists(users);
 }
 
+/**
+ * function to check for changes to any element in
+ * the "Your Server" section. any change to:
+ *      - Server Name
+ *      - Admin Users
+ *      - any unsubscribe list
+ */
 function checkForChanges() {
+    // ---------- check Server Name and Admin Users ----------
     const input = document.getElementById("server-name-input-box");
     const hasNameChange = input.value.trim() !== serverNameInit;
     const hasAdminChange = !equal(admins, adminsInit);
@@ -62,7 +77,24 @@ function checkForChanges() {
     } else {
         hideSaveCancelButtons();
     }
+
+    // ---------- check unsubscribe lists ----------
+    const haveUnsubscribeListsChanged = unsubscribeListsHaveChanged(unsubscribeLists, unsubscribeListsInit);
+    
+    if (haveUnsubscribeListsChanged) {
+        // unsubscribe lists have been changed
+        // show save/cancel buttons to save the unsubscribe lists 
+        showUnsubscribeListSaveCancel();
+    } else {
+        // unsubscribe lists have NOT been changed
+        // do nothing
+        hideUnsubscribeListSaveCancel();
+        return;
+    }
+
 }
+
+// -------------------- Server Name & Admin Users --------------------
 
 function hideSaveCancelButtons() {
     document.getElementById("server-settings-buttons").classList.add("hide");
@@ -115,18 +147,84 @@ async function updateServerName(name) {
 }
 
 
-const list_name_map = {
-    "newly_released_content_updates_unsubscribe_list": "Newly Released Content",
-    "system_updates_unsubscribe_list": "System Updates"
+// -------------------- Email Unsubscribe Lists --------------------
+
+/**
+ * Compare two full arrays of unsubscribe lists by matching table names
+ * @param {Array} currentLists - Array from get_unsubscribe_lists() (current state)
+ * @param {Array} initialLists - Array from get_unsubscribe_lists() (cached/initial state)
+ * @returns {boolean} - True if ANY list has changed (added, removed, or modified rows)
+ */
+function unsubscribeListsHaveChanged(currentLists, initialLists) {
+    // Quick check: different number of tables means something changed
+    if (currentLists.length !== initialLists.length) {
+        return true;
+    }
+
+    // Build lookup map for initial lists by table_name
+    const initialMap = new Map(initialLists.map(l => [l.table_name, l]));
+
+    // Check each current list against its matching initial list
+    for (const current of currentLists) {
+        const initial = initialMap.get(current.table_name);
+        
+        // If table doesn't exist in initial, it's new
+        if (!initial) {
+            return true;
+        }
+
+        // Compare the two lists
+        if (!unsubscribeListsEqual(current, initial)) {
+            return true;
+        }
+    }
+
+    return false;
 }
-async function initUnsubscribeLists() {
+
+/**
+ * Deep equality check for two individual unsubscribe list objects
+ * (your existing function, slightly cleaned up)
+ */
+function unsubscribeListsEqual(listA, listB) {
+    // Check table names match
+    if (listA.table_name !== listB.table_name) {
+        return false;
+    }
+
+    // Check row counts match
+    if (listA.rows.length !== listB.rows.length) {
+        return false;
+    }
+
+    // Compare rows (order-independent using Set)
+    const rowSignature = (row) => `${row.user_id}|${row.username}|${row.friendly_name}`;
+
+    const setA = new Set(listA.rows.map(rowSignature));
+    const setB = new Set(listB.rows.map(rowSignature));
+
+    if (setA.size !== setB.size) return false;
+
+    for (const sig of setA) {
+        if (!setB.has(sig)) return false;
+    }
+
+    return true;
+}
+
+function getUnsubscribeListByTableName(tableName) {
+    return unsubscribeLists.find(l => l.table_name === tableName) || null;
+}
+
+async function initUnsubscribeLists(users) {
     const res = await fetch("/backend/get_unsubscribe_lists");
-    const lists = await res.json();
+    unsubscribeLists = await res.json();
+    unsubscribeListsInit = structuredClone(unsubscribeLists);
     
     const parent = document.getElementById("unsubscribe-list-selector");
 
     // add existing unsubscribe lists if there are any
-    for (const [index, list] of lists.entries()) {
+    for (const [index, list] of unsubscribeLists.entries()) {
         const selector = cr("div", "selector", list+"_selector");
         const translateAmount = 2 * (index);
 
@@ -134,34 +232,91 @@ async function initUnsubscribeLists() {
         selector.style.transform = `translateY(-${translateAmount}px)`;
 
         const listName = cr("p", null, null);
-        listName.textContent = list_name_map[list] || list;
+        const displayName = list_name_map[list["table_name"]] || list["table_name"];
+        listName.textContent = displayName;
         selector.appendChild(listName);
         parent.appendChild(selector);
-    }
 
-    // // add box to enter new unsubscribe list in
-    // const list_adder = cr("div", "list-adder", "unsubscribe-list-adder");
-    // const listAdderInp = cr("input", "connection-input-box", "list-adder-text");
-    // listAdderInp.placeholder="Enter new list name...";
-    // listAdderInp.addEventListener("input", (e) => {
-    //     const par = document.getElementById("unsubscribe-list-selector");
-    //     if (e.target.value !== "") {
-    //         par.classList.add("typing-new-list");
-    //     } else {
-    //         par.classList.remove("typing-new-list");
-    //     }
-    //     addListAdderButton();
-    // });
-    // listAdderInp.addEventListener("focus", () => {
-    //     const la = document.getElementById("unsubscribe-list-adder");
-    //     la.classList.add("active");
-    // });
-    // listAdderInp.addEventListener("blur", () => {
-    //     const la = document.getElementById("unsubscribe-list-adder");
-    //     la.classList.remove("active");
-    // });
-    // list_adder.appendChild(listAdderInp);
-    // parent.appendChild(list_adder);
+        const tableName = list.table_name;
+        // add click event listeners
+        selector.addEventListener("click", () => {
+            // make Save/Cancel buttons visible (but hidden) if the displayed_unsubscribe_list is currently null.
+            // (these elements hide beneath a container, but the list container only appears after choosing a list)
+            if (!displayed_unsubscribe_list) {
+                const buttons = document.getElementById("unsubscribe-list-buttons");
+                buttons.classList.remove("invisible");
+            }
+
+            if (displayed_unsubscribe_list !== displayName) {
+                // dsplay this unsubscribe list
+                const freshList = getUnsubscribeListByTableName(tableName);
+                if (freshList) { displayUnsubscribeList(freshList, users); }
+            }
+
+            // add class to selector to change its style
+            document.querySelectorAll('.selector').forEach(el => el.classList.remove('selected'));
+            selector.classList.add('selected');
+        });
+    }
+}
+
+async function displayUnsubscribeList(list, users) {
+    // clear users-unsubscribe-selector element ready for new display
+    document.getElementById("users-unsubscribe-selector").innerHTML = "";
+
+    // store the currently displayed list
+    displayed_unsubscribe_list = list_name_map[list.table_name] || list.table_name;
+
+    // do not pass in the users list containing every field of each user,
+    // filter it to keep just user_id, username, and friendly_name
+    const pickFields = (obj, fields) => Object.fromEntries(fields.map(f => [f, obj[f]]));
+    const filteredUsers = users.map(u => pickFields(u, ['user_id', 'username', 'friendly_name']));
+    unsubscribedUsers = list['rows'];
+    unsubscribeUserSelector = new UserListSelector(
+        "users-unsubscribe-selector",
+        unsubscribedUsers,
+        filteredUsers,
+        (newList) => {
+            unsubscribedUsers = newList;
+            checkForChanges();
+        },
+        "users-unsubscribe-dropdown"
+    );
+}
+
+/**
+ * gets the currently displayed unsubscribe list object from the
+ * unsubscribeLists aray, using the name stored as the "displayed_unsubscribe_list".
+ */
+function getCurrentUnsubscribeList() {
+    return unsubscribeLists.find(l =>
+        (list_name_map[l.table_name] || l.table_name) === displayed_unsubscribe_list
+    ) || null;
+}
+
+function hideUnsubscribeListSaveCancel() {
+    document.getElementById("unsubscribe-list-buttons").classList.add("hide");
+}
+
+function showUnsubscribeListSaveCancel() {
+    document.getElementById("unsubscribe-list-buttons").classList.remove("hide");
+}
+
+function unsubscribeListsSave() {
+    // `unsubscribeLists` variable needs to be saved back to storage.
+
+}
+
+function unsubscribeListsCancel() {
+    // `unsubscribeLists` variabel should be reset to be `unsubscribeListsInit`
+    unsubscribeLists = structuredClone(unsubscribeListsInit);
+    hideUnsubscribeListSaveCancel();
+    
+    const currentListObj = getCurrentUnsubscribeList();
+    
+    if (currentListObj) {
+        unsubscribeUserSelector.reset(currentListObj.rows);
+    }
 }
 
 // -------------------- on load function --------------------
@@ -172,7 +327,11 @@ window.onload = async function() {
     admins = await adminsRes.json();
     adminsInit = [...admins];
 
-    initServerSettings();
+    initServerSettings(users);
+    initTautulliURLInputBox();
+    initTautulliAPIInputBox();
+    initOverseerr();
+    initSMTPInputBoxes();
 
     adminSelector = new UserListSelector(
         "admin-selector",

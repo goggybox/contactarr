@@ -60,7 +60,7 @@ Please keep this header comment in all copies of the program.
 
   <div class="content-wrapper">
     <div class="content">
-      <div class="settings-container">
+      <div class="settings-container" id="server-settings">
         <h2 id="server-section-name">Your Server</h2>
         <div class="your-server-settings">
           <p class="settings-descriptor">Configure settings for your Plex Media Server.</p>
@@ -121,10 +121,16 @@ Please keep this header comment in all copies of the program.
                 </div>
                 <div id="list">
                   <p class="connection-text">Users in List</p>
-                  <div class="user-list">
+                  <div class="users-selector" id="users-unsubscribe-selector">
                     <div id="user-list-select-desc"><p>Select a unsubscribe list to view</p></div>
+                    <!-- LIST GOES HERE -->
                   </div>
-                  <div class="users-selector" id="users-unsubscribe-selector"></div>
+                  <div class="connection-action-wrapper">
+                    <div class="connection-buttons-vertical hide invisible" id="unsubscribe-list-buttons">
+                      <div class="connection-save" onclick="unsubscribeListsSave()">Save</div>
+                      <div class="connection-cancel" onclick="unsubscribeListsCancel()">Cancel</div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
