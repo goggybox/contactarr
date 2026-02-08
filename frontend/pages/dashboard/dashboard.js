@@ -34,7 +34,7 @@ const DEFAULT_FOOTER_CONTENT = `You can unsubscribe from email notifications by 
 export let selecting_users = false;
 export let selected_users = [];
 let users;
-let selected_email = "server";
+let selected_email = "server"; // either "server" or "overseerr"
 let systemUpdatesUnsubscribeList = [];
 
 // -------------------- text area functions --------------------
@@ -229,11 +229,35 @@ function displayUsers(users) {
     document.getElementById("deselect-all-users-button").addEventListener("click", deselectAllUsers);
 }
 
-function displayEmail(service) {
-    const embedContainer = document.getElementById("embed-container");
-    embedContainer.innerHTML = "";
+// -------------------- email display components --------------------
 
-    if (service !== "server") { return; }
+function serverSelected() {
+    selected_email = "server";
+    displayEmail();
+}
+
+function overseerrSelected() {
+    selected_email = "overseerr";
+    displayEmail();
+}
+
+function displayEmail() {
+    if (selected_email === "server") {
+        displayServerEmail();
+    } else if (selected_email === "overseerr") {
+        displayOverseerrEmail();
+    }
+}
+
+function displayServerEmail() {
+    // change selector styles
+    document.getElementById("server-selector").classList.add("selected");
+    document.getElementById("overseerr-selector").classList.remove("selected");
+    document.getElementById("server-inner-email-container").classList.remove("hidden");
+    document.getElementById("overseerr-inner-email-container").classList.add("hidden");
+
+    const embedContainer = document.getElementById("server-embed-container");
+    embedContainer.innerHTML = "";
 
     const serverEmailContainer = document.createElement("div");
     serverEmailContainer.classList.add("server-email-container");
@@ -262,6 +286,31 @@ function displayEmail(service) {
     
     contentContainer.innerHTML = saved.content;
     footerP.textContent = saved.footer;
+}
+
+function displayOverseerrEmail() {
+    // change selector styles
+    document.getElementById("server-selector").classList.remove("selected");
+    document.getElementById("overseerr-selector").classList.add("selected");
+    document.getElementById("server-inner-email-container").classList.add("hidden");
+    document.getElementById("overseerr-inner-email-container").classList.remove("hidden");
+
+    const embedContainer = document.getElementById("overseerr-embed-container");
+    embedContainer.innerHTML = "";
+
+    const overseerrEmailContainer = document.createElement("div");
+    overseerrEmailContainer.classList.add("overseerr-email-container");
+
+    const img = document.createElement("img");
+    img.classList.add("overseerr-banner");
+    img.src = '/emails/overseerr/banner.png';
+
+    const contentContainer = document.createElement("div");
+    contentContainer.id = "overseerr-content-container";
+    contentContainer.innerHTML = `<p>Hi goggybox!</p>`
+
+    overseerrEmailContainer.append(img, contentContainer);
+    embedContainer.appendChild(overseerrEmailContainer);
 }
 
 function setupEmailEditors(contentContainer, footerElement) {
@@ -520,4 +569,8 @@ window.onload = async function() {
 
     // add event listener to send email button
     document.getElementById("send-email-button").addEventListener("click", sendEmail);
+
+    // add event listener to server and overseerr email buttons
+    document.getElementById("server-selector").addEventListener("click", serverSelected);
+    document.getElementById("overseerr-selector").addEventListener("click", overseerrSelected);
 }

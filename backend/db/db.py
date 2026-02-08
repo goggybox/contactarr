@@ -285,6 +285,7 @@ def process_overseerr_requests():
     last_process = cnf.get('last_requests_process', 0) # will ignore requests from before the last processing
 
     requests = overseerr.get_requests()
+    print(requests)
     
     with get_connection() as conn:
         with conn:
