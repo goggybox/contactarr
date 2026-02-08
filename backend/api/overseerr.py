@@ -98,8 +98,14 @@ def get_requests():
     if response and response.get("results"):
         return response["results"]
 
-def get_movie_poster_url(rating_key: str):
+def get_movie_poster_url(tmdb_id: str):
     """get the TMDb URL for the poster of a given movie"""
-    response = getFromAPI(f"movie/{rating_key}")
+    response = getFromAPI(f"movie/{tmdb_id}")
+    if response and response.get("posterPath"):
+        return response["posterPath"]
+
+def get_show_poster_url(tmdb_id: str):
+    """get the TMDb URL for the poster of a given show"""
+    response = getFromAPI(f"tv/{tmdb_id}")
     if response and response.get("posterPath"):
         return response["posterPath"]
