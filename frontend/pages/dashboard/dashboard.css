@@ -248,7 +248,11 @@ MODIFIED TO APPLY TO HORIZONTAL EDGES
     background: var(--primary-background-highlighted-colour);
 }
 
-#embed-container {
+.inner-email-container.hidden {
+    display:none;
+}
+
+.embed-container {
     height: 480px;
     background: var(--server-email-backdrop-colour);
     border: 3px solid var(--secondary-background-colour);

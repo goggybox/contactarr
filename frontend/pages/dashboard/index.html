@@ -35,6 +35,7 @@ Please keep this header comment in all copies of the program.
   <link rel="stylesheet" href="/modals/notification/notification.css">
   <link rel="stylesheet" href="/pages/dashboard/dashboard.css">
   <link rel="stylesheet" href="/emails/server/server.css">
+  <link rel="stylesheet" href="/emails/overseerr/overseerr.css">
   <link rel="stylesheet" href="../../modals/confirmation/confirmation.css">
 </head>
 <body>
@@ -85,33 +86,41 @@ Please keep this header comment in all copies of the program.
       <div class="email-container" id="email-container">
         <h2>Manual Email</h2>
         <div class="email-selector">
-          <p class="selector selected" id="server-selector" onclick="serverSelected()">Your Server</p>
-          <p class="selector" id="overseerr-selector" onclick="overseerrSelected()">Overseerr</p>
+          <p class="selector selected" id="server-selector">Your Server</p>
+          <p class="selector" id="overseerr-selector">Overseerr</p>
         </div>
         <div class="html-email-container">
-          <p class="html-email-text first">Here you can manually send a system update email to one or more users. The email can be edited below, and a rendering is shown.</p>
-          <div id="embed-container">
+          <div class="inner-email-container" id="server-inner-email-container">
+            <p class="html-email-text first">Here you can manually send a system update email to one or more users. The email can be edited below, and a rendering is shown.</p>
+            <div class="embed-container" id="server-embed-container">
 
+            </div>
+            <div class="email-element-container">
+              <p>Sender Address</p>
+              <textarea class="email-input" id="senderInput" rows="1"></textarea>
+            </div>
+            <div class="email-element-container">
+              <p>Subject Line</p>
+              <textarea class="email-input" id="subjectInput" rows="1"></textarea>
+            </div>
+            <div class="email-element-container">
+              <p class="html-email-text">Content</p>
+              <textarea class="email-input" id="htmlInput" rows="7"></textarea>
+            </div>
+            <div class="email-element-container">
+              <p class="html-email-text">Footer</p>
+              <textarea class="email-input" id="footerInput" rows="1"></textarea>
+            </div>
+            <p class="select-users-button" id="server-select-users-button">
+              Select Users
+            </p>
           </div>
-          <div class="email-element-container">
-            <p>Sender Address</p>
-            <textarea class="email-input" id="senderInput" rows="1"></textarea>
+          <div class="inner-email-container hidden" id="overseerr-inner-email-container">
+            <p class="html-email-text first">Here you can manually send an Overseerr email to <strong>ONE</strong> user. This allows you to reject a request after it was already accepted by Overseerr.</p>
+            <div class="embed-container" id="overseerr-embed-container">
+
+            </div>
           </div>
-          <div class="email-element-container">
-            <p>Subject Line</p>
-            <textarea class="email-input" id="subjectInput" rows="1"></textarea>
-          </div>
-          <div class="email-element-container">
-            <p class="html-email-text">Content</p>
-            <textarea class="email-input" id="htmlInput" rows="7"></textarea>
-          </div>
-          <div class="email-element-container">
-            <p class="html-email-text">Footer</p>
-            <textarea class="email-input" id="footerInput" rows="1"></textarea>
-          </div>
-          <p class="select-users-button" id="server-select-users-button">
-            Select Users
-          </p>
         </div>
       </div>
     </div>
