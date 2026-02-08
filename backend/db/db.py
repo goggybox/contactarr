@@ -90,6 +90,13 @@ def _get_movie_from_name_year(conn, movie_name, year):
     ).fetchone()
     return dict(row) if row else None
 
+def _get_show_from_name_year(conn, show_name, year):
+    row = conn.execute(
+        "SELECT show_id, rating_key FROM shows WHERE show_name = ? AND year = ?",
+        (show_name, year,)
+    ).fetchone()
+    return dict(row) if row else None
+
 def _get_movie_from_db_from_rating_key(conn, rating_key):
     row = conn.execute(
         "SELECT * FROM movies WHERE rating_key = ?",
@@ -98,7 +105,16 @@ def _get_movie_from_db_from_rating_key(conn, rating_key):
     if row is None:
         return None
     return dict(row)
-8
+
+def _get_show_from_db_from_rating_key(conn, rating_key):
+    row = conn.execute(
+        "SELECT * FROM shows WHERE rating_key = ?",
+        (int(rating_key),)
+    ).fetchone()
+    if row is None:
+        return None
+    return dict(row)
+
 def _get_show_id_from_rating_key(conn, rating_key):
     """
     get a show's id from its rating_key
@@ -116,6 +132,16 @@ def _get_season_id_from_rating_key(conn, rating_key):
     row = conn.execute (
         "SELECT season_id FROM seasons WHERE rating_key = ? LIMIT 1",
         (rating_key,)
+    ).fetchone()
+    return row["season_id"] if row else None
+
+def _get_season_id_from_show_id_season_num(conn, show_id, season_num):
+    """
+    get a season's id from its show's ID and the season number
+    """
+    row = conn.execute (
+        "SELECT season_id FROM seasons WHERE show_id = ? AND season_num = ? LIMIT 1",
+        (show_id, season_num,)
     ).fetchone()
     return row["season_id"] if row else None
 
@@ -303,7 +329,7 @@ def process_overseerr_requests():
         with conn:
             # existing tables to compare against
             movies_table = _get_table_indexed(conn, "movies", "rating_key")
-            # shows_table = _get_table(conn, "shows", "")
+            shows_table = _get_table_indexed(conn, "shows", "rating_key")
 
             # consider each request
             for request in requests:
@@ -317,8 +343,7 @@ def process_overseerr_requests():
                     process_movie_request(request, movies_table)
                 else:
                     # tv
-                    # process_tv_request(request, shows_table)
-                    continue
+                    process_tv_request(request, shows_table)
 
 def extract_year_from_yyyy_dd_mm(datestr):
     # extract just year from 2026-02-08 format
@@ -373,7 +398,6 @@ def process_movie_request(request, movies_table):
                     # wasn't already in table, we added it.
                     print(f"Added movie {tmdb_movie_details["title"]} ({extract_year_from_yyyy_dd_mm(tmdb_movie_details["release_date"])}) to movies table. (MOVIE ID {movie_id}) (RATING KEY {rating_key} {type(rating_key)})")
 
-                # movie is not in tautulli, so hasn't been watched. no need to add to movie_watches table.
     else:
         # there is a movie in the movies table with the rating key overseerr expected.
         # get the movie_name and movie_year
@@ -395,7 +419,6 @@ def process_movie_request(request, movies_table):
                 #   - if their Overseerr username matches the username of a Plex user in our users table, the
                 #     request will be assigned to them.
                 username = request["requestedBy"]["username"]
-                print(username)
                 if (username):
                     user_plex_id = _get_user_id_from_username(conn, username)
 
@@ -412,6 +435,134 @@ def process_movie_request(request, movies_table):
             })
 
             print(f"Added request to movie_requests table for {movie_name} ({movie_year}): request ID {request_id}.")
+
+def process_tv_request(request, shows_table):
+    request_media = request["media"]
+    tmdbId = request_media["tmdbId"]
+    rating_key = request_media["ratingKey"]
+    show_id = None
+    show_name = None
+    show_year = None
+    tmdb_show_details = tmdb.get_show(tmdbId)
+
+    if not rating_key:
+        return
+
+    show_in_table = int(rating_key) in shows_table
+
+    if not show_in_table:
+        # the show is not in the shows table.
+
+        # add it:
+        with get_connection() as conn:
+            with conn:
+                show_name = tmdb_show_details["name"]
+                show_year = extract_year_from_yyyy_dd_mm(tmdb_show_details["first_air_date"])
+                tmdb_poster_url = tmdb_show_details["poster_path"]
+
+                show_id = _add_to_table(conn, {
+                    "table": "shows",
+                    "data": {
+                        "show_name": show_name,
+                        "year": show_year, # "first_air_date" is in format 2026-08-02, we just want year.
+                        "rating_key": rating_key,
+                        "tmdb_poster_url": tmdb_poster_url # not in tautulli, so can't use tautulli_poster_url
+                    },
+                    "return": "show_id"
+                })
+
+                # if show_id is None, that means it was not added to the table because there was a constraint
+                # violation, namely that there already exists a show with the same movie_name+year.
+                #   - it can be the case that overseerr has the incorrect rating_key.
+                if not show_id:
+                    # we now need to get the movie_id and rating_key of the entry in the movies table.
+                    obtained_show = _get_show_from_name_year(conn, show_name, show_year)
+                    show_id = obtained_show["show_id"]
+                    rating_key = obtained_show["rating_key"]
+
+                # wasn't already in table, we added it above.
+                print(f"Added show {tmdb_show_details["name"]} ({extract_year_from_yyyy_dd_mm(tmdb_show_details["first_air_date"])}) to shows table. (SHOW ID {show_id}) (RATING KEY {rating_key} {type(rating_key)})")
+    else:
+        # there is a show in the shows table with the rating key overseerr expected.
+        # get the show_name and show_year
+        with get_connection() as conn:
+            with conn:
+                obtained_show = _get_show_from_db_from_rating_key(conn, rating_key)
+                show_id = obtained_show["show_id"]
+                show_name = obtained_show["show_name"]
+                show_year = obtained_show["year"]
+    
+    # now, if the movie was already in the table, we got its id. if the movie wasn't in the table, we added it and got an id.
+    # now add an entry to movie_requests for the obtained movie_id
+    with get_connection() as conn:
+        with conn:
+            # we now need to add entries to seasons table FOR EVERY SEASON IN SHOW.
+            # we get season information from tmdb_show_details
+            # if every season is already in seasons table, nothing will happen. 
+            seasons = tmdb_show_details["seasons"]
+            for season in seasons:
+                season_id = _add_to_table(conn, {
+                    "table": "seasons",
+                    "data": {
+                        "show_id": show_id,
+                        "season_num": season["season_number"],
+                        "episode_count": season["episode_count"],
+                        "year": extract_year_from_yyyy_dd_mm(season["air_date"]),
+                    },
+                    "return": "season_id"
+                })
+                if season_id:
+                    print(f"ADDED SEASON {season["season_number"]} FOR show {show_name}")
+                else:
+                    print(f"(!!) Tried to add season {season["season_number"]} for show {show_name}")
+                    print(f"      show_id:{show_id}, season_num:{season["season_number"]}, episode_count:{season["episode_count"]}, year:{extract_year_from_yyyy_dd_mm(season["air_date"])}")
+
+
+
+            user_plex_id = request["requestedBy"].get("plexId")
+            if not user_plex_id:
+                # there may be a user in Overseerr who isn't connected to a Plex account (such as a local user).
+                # they should still have a Plex ID, and it should be in Tautulli.
+                #   - if their Overseerr username matches the username of a Plex user in our users table, the
+                #     request will be assigned to them.
+                username = request["requestedBy"]["username"]
+                if (username):
+                    user_plex_id = _get_user_id_from_username(conn, username)
+
+                # request_id = _add_to_table(conn, {
+                #     "table": "show_requests",
+                #     "data": {
+                #         "show_id": show_id,
+                #         "requested_at": get_unix_from_iso(request["createdAt"]),
+                #         "status": request["status"], # 1 = PENDING, 2 = APPROVED, 3 = DECLINED
+                #         "updated_at": get_unix_from_iso(request["updatedAt"]),
+                #         "user_id": user_plex_id
+                #     },
+                #     "return": "request_id"
+                # })
+                # print(f"Added request to show_requests table for {show_name} ({show_year}): request ID {request_id}.")
+
+            print(len(request["seasons"]))
+            for season in request["seasons"]:
+                # for each requested season, get the season id for the seasonNumber of the request, add an entry to season_requests.
+                season_num = season["seasonNumber"]
+                season_id = _get_season_id_from_show_id_season_num(conn, show_id, season_num)
+                request_id = _add_to_table(conn, {
+                    "table": "season_requests",
+                    "data": {
+                        "season_id": season_id,
+                        "show_id": show_id,
+                        "requested_at": get_unix_from_iso(season["createdAt"]),
+                        "status": season["status"],
+                        "updated_at": get_unix_from_iso(season["updatedAt"]),
+                        "user_id": user_plex_id
+                    },
+                    "return": "request_id"
+                })
+                print(f"Added season request for {show_name} ({show_year}): season {season_num}, requested by {user_plex_id}, request ID: {request_id}")
+                if not request_id:
+                    print(f"    season_id: {season_id}, show_id: {show_id}, requested_at: {get_unix_from_iso(season["createdAt"])}, updated_at: {get_unix_from_iso(season["updatedAt"])}, user_id: {user_plex_id}")
+                    print(f"    tried to get season id {season_id}. Did get_season_id_from_show_id_season_num(conn, {show_id}, {season_num})")
 
 def get_movie_poster_url_and_cache(rating_key: str):
     with get_connection() as conn:
@@ -705,7 +856,6 @@ def populate_shows():
                             "data": {
                                 "season_id": season_id,
                                 "show_id": existing_id,
-                                "rating_key": episode_rating_key,
                                 "number": episode_number,
                                 "name": episode_name
                             }
@@ -988,9 +1138,9 @@ def init_db():
                 show_id INTEGER PRIMARY KEY,
                 show_name TEXT,
                 year INTEGER,
-                rating_key INTEGER NOT NULL,
-                tvdb_id INTEGER UNIQUE,
-                tvdb_poster_url TEXT,
+                rating_key INTEGER,
+                tmdb_id INTEGER UNIQUE,
+                tmdb_poster_url TEXT,
                 tautulli_poster_url TEXT,
                 UNIQUE(show_name, year)
             );
@@ -1003,7 +1153,7 @@ def init_db():
                 season_num INTEGER NOT NULL,
                 episode_count INTEGER,
                 year INTEGER,
-                rating_key INTEGER UNIQUE NOT NULL,
+                rating_key INTEGER,
                 UNIQUE(show_id,season_num)
             );
         """)
@@ -1021,7 +1171,7 @@ def init_db():
                 episode_id INTEGER PRIMARY KEY,
                 season_id INTEGER NOT NULL REFERENCES seasons(season_id),
                 show_id INTEGER NOT NULL,
-                rating_key INTEGER NOT NULL,
+                rating_key INTEGER,
                 number INTEGER NOT NULL,
                 name TEXT NOT NULL,
                 UNIQUE(season_id, number, name)
