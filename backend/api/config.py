@@ -103,6 +103,14 @@ def get_tvdb_config():
         'api_token': get_config_value('TVDB_TOKEN')
     }
 
+def get_tmdb_config():
+    """get fresh TMdb configuration"""
+    return {
+        'api_key': get_config_value('TMDB_API_KEY'),
+        'api_url': get_config_value('TMDB_API_URL', 'https://api.themoviedb.org/3'),
+        'api_token': get_config_value('TMDB_TOKEN')
+    }
+
 def get_server_config():
     return {
         'name': get_config_value('SERVER_NAME'),

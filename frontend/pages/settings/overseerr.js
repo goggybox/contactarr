@@ -55,7 +55,7 @@ async function overseerrConnectionSave() {
     const success = await res.json();
     if (success) {
         overseerr_key = val;
-        hideOverseerSaveAndCancelButtons();
+        hideOverseerrSaveAndCancelButtons();
         showNotification("Overseerr API Key Saved");
         await fetch("/backend/link_overseerr");
     }
@@ -89,6 +89,13 @@ function showOverseerrSaveAndCancelButtons() {
     const testBtn = document.getElementById("overseerr-connection-test");
     btns.classList.remove("hide");
     testBtn.classList.add("hide");
+}
+
+function hideOverseerrSaveAndCancelButtons() {
+    const btns = document.getElementById("overseerr-connection-buttons");
+    const testBtn = document.getElementById("overseerr-connection-test");
+    btns.classList.add("hide");
+    testBtn.classList.remove("hide");
 }
 
 async function overseerrAPIKeyListener() {

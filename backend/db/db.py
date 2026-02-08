@@ -23,9 +23,12 @@
 import sqlite3
 import time
 from pathlib import Path
+from datetime import datetime
+from datetime import timezone
 from backend.api import tautulli
 from backend.api import overseerr
 from backend.api import config
+from backend.api import tmdb
 
 DB_PATH = Path(__file__).parent / "contactarr.db"
 
@@ -61,6 +64,15 @@ def _get_table_indexed(conn, name, key_field):
     rows = conn.execute(f"SELECT * FROM {name}").fetchall()
     return {row[key_field]: dict(row) for row in rows}
 
+def _get_user_id_from_username(conn, username):
+    row = conn.execute(
+        "SELECT user_id FROM users WHERE username = ?",
+        (username,)
+    ).fetchone()
+    if row is None:
+        return None
+    return row["user_id"]
+
 def _get_movie_id_from_rating_key(conn, rating_key):
     """
     get a movie's id from its rating_key
@@ -71,12 +83,12 @@ def _get_movie_id_from_rating_key(conn, rating_key):
     ).fetchone()
     return row["movie_id"] if row else None
 
-def _get_movie_id_from_name_year(conn, movie_name, year):
+def _get_movie_from_name_year(conn, movie_name, year):
     row = conn.execute(
-        "SELECT movie_id FROM movies WHERE movie_name = ? AND year = ?",
+        "SELECT movie_id, rating_key FROM movies WHERE movie_name = ? AND year = ?",
         (movie_name, year,)
     ).fetchone()
-    return row["movie_id"] if row else None
+    return dict(row) if row else None
 
 def _get_movie_from_db_from_rating_key(conn, rating_key):
     row = conn.execute(
@@ -275,89 +287,148 @@ very slow operation - and many movies on tautulli may no longer be on overseerr.
 """
 
 def get_unix_from_iso(iso):
-    dt = datetime.strptime(iso, "%Y-%m-%dT%H:%M:%S.%fZ")
-    dt = dt.replace(tzinfo=timezone.utc)
-    unix = int(dt.timestamp())
-    return unix
+    # Handles variable decimal places automatically
+    dt = datetime.fromisoformat(iso.replace('Z', '+00:00'))
+    return int(dt.timestamp())
 
 def process_overseerr_requests():
     cnf = config.get_overseerr_config()
-    last_process = cnf.get('last_requests_process', 0) # will ignore requests from before the last processing
+    last_process = cnf.get('last_requests_process') # will ignore requests from before the last processing
+    if not last_process:
+        last_process = 0
 
     requests = overseerr.get_requests()
-    print(requests)
     
     with get_connection() as conn:
         with conn:
             # existing tables to compare against
-            movies_table = _get_table_indexed(conn, "movies", "tmdb_id")
+            movies_table = _get_table_indexed(conn, "movies", "rating_key")
             # shows_table = _get_table(conn, "shows", "")
 
             # consider each request
-            print(len(movies_table))
-            # for request in requests:
-            #     if get_unix_from_iso(request["updatedAt"] < last_process):
-            #         # this request will have been processed as part of a previous scan
-            #         continue
+            for request in requests:
+                if get_unix_from_iso(request["updatedAt"]) < last_process:
+                    # this request will have been processed as part of a previous scan
+                    continue
                 
-            #     # is it a movie or show?
-            #     if request["type"] == "movie":
-            #         # movie
-            #         process_movie_request(request, movies_table)
-            #     else:
-            #         # tv
-            #         process_tv_request(request, shows_table)
+                # is it a movie or show?
+                if request["type"] == "movie":
+                    # movie
+                    process_movie_request(request, movies_table)
+                else:
+                    # tv
+                    # process_tv_request(request, shows_table)
+                    continue
+
+def extract_year_from_yyyy_dd_mm(datestr):
+    # extract just year from 2026-02-08 format
+    return datetime.fromisoformat(datestr).year
 
 def process_movie_request(request, movies_table):
-    # table fields for a request:
-        # request_id
-        # movie_id
-        # requested_at
-        # status
-        # updated_at
-        # user_id
-    # relevant table fields for a movie:
-        # tmdb_poster_url
-        # tautulli_poster_url
-        # movie_id
-        # tmdb_id
-        # rating_key
 
-    media = request["media"]
-    tmdbId = media["tmdbId"]
+    request_media = request["media"]
+    tmdbId = request_media["tmdbId"]
+    rating_key = request_media["ratingKey"]
+    movie_id = None
+    movie_name = None
+    movie_year = None
+    tmdb_movie_details = tmdb.get_movie(tmdbId) # get information about the movie from TMDB.
     
     # get movie from existing table
-    print(media)
-    movie_in_table = movies_table.get(tmdbId)
-    print(movie_in_table)
+    if not rating_key:
+        return
 
-    # if not movie_in_table:
-        # the movie may still be in the table, just may not have its tmdbId so couldn't be found.
-        # instead search for name+year.
+    movie_in_table = int(rating_key) in movies_table
 
-    
-    # if the movie doesn't have a tautulli_poster_url, and doesn't have
-    # a tmdb_poster_url, add a tmdb_poster_url. (from /movie/{tmdbId}/ endpoint)
-    
+    if not movie_in_table:
+        # the move is not in the movies table.
 
+        # add it:
+        with get_connection() as conn:
+            with conn:
+                movie_name = tmdb_movie_details["title"]
+                movie_year = extract_year_from_yyyy_dd_mm(tmdb_movie_details["release_date"])
+                tmdb_poster_url = tmdb_movie_details["poster_path"]
 
+                movie_id = _add_to_table(conn, {
+                    "table": "movies",
+                    "data": {
+                        "movie_name": movie_name,
+                        "year": movie_year, # "release_date" is in format 2026-08-02, we just want year.
+                        "rating_key": rating_key,
+                        "tmdb_poster_url": tmdb_poster_url # not in tautulli, so can't use tautulli_poster_url
+                    },
+                    "return": "movie_id"
+                })
 
-# def get_movie_poster_url_and_cache(rating_key: str):
-#     with get_connection() as conn:
-#         movie = _get_movie_from_db_from_rating_key(conn, rating_key)
-#         if movie:
-#             if not movie.get("tmdb_poster_url"):
-#                 # we don't have it in the db yet.
-#                 poster_url = overseerr.get_movie_poster_url(rating_key)
-#                 conn.execute(
-#                     "UPDATE movies SET tmdb_poster_url = ? WHERE rating_key = ?",
-#                     (poster_url, rating_key)
-#                 )
-#                 conn.commit()
-#                 return poster_url
-#             else:
-#                 return movie["tmdb_poster_url"]
-#         return None
+                # if movie_id is None, that means it was not added to the table because there was a constraint
+                # violation, namely that there already exists a movie with the same movie_name+year.
+                #   - it can be the case that overseerr has the incorrect rating_key.
+                if not movie_id:
+                    # we now need to get the movie_id and rating_key of the entry in the movies table.
+                    obtained_movie = _get_movie_from_name_year(conn, movie_name, movie_year)
+                    movie_id = obtained_movie["movie_id"]
+                    rating_key = obtained_movie["rating_key"]
+                else:
+                    # wasn't already in table, we added it.
+                    print(f"Added movie {tmdb_movie_details["title"]} ({extract_year_from_yyyy_dd_mm(tmdb_movie_details["release_date"])}) to movies table. (MOVIE ID {movie_id}) (RATING KEY {rating_key} {type(rating_key)})")
+
+                # movie is not in tautulli, so hasn't been watched. no need to add to movie_watches table.
+    else:
+        # there is a movie in the movies table with the rating key overseerr expected.
+        # get the movie_name and movie_year
+        with get_connection() as conn:
+            with conn:
+                obtained_movie = _get_movie_from_db_from_rating_key(conn, rating_key)
+                movie_id = obtained_movie["movie_id"]
+                movie_name = obtained_movie["movie_name"]
+                movie_year = obtained_movie["year"]
+
+    # now, if the movie was already in the table, we got its id. if the movie wasn't in the table, we added it and got an id.
+    # now add an entry to movie_requests for the obtained movie_id
+    with get_connection() as conn:
+        with conn:
+            user_plex_id = request["requestedBy"].get("plexId")
+            if not user_plex_id:
+                # there may be a user in Overseerr who isn't connected to a Plex account (such as a local user).
+                # they should still have a Plex ID, and it should be in Tautulli.
+                #   - if their Overseerr username matches the username of a Plex user in our users table, the
+                #     request will be assigned to them.
+                username = request["requestedBy"]["username"]
+                print(username)
+                if (username):
+                    user_plex_id = _get_user_id_from_username(conn, username)
+
+            request_id = _add_to_table(conn, {
+                "table": "movie_requests",
+                "data": {
+                    "movie_id": movie_id,
+                    "requested_at": get_unix_from_iso(request["createdAt"]),
+                    "status": request["status"], # 1 = PENDING, 2 = APPROVED, 3 = DECLINED
+                    "updated_at": get_unix_from_iso(request["updatedAt"]),
+                    "user_id": user_plex_id
+                },
+                "return": "request_id"
+            })
+
+            print(f"Added request to movie_requests table for {movie_name} ({movie_year}): request ID {request_id}.")
+
+def get_movie_poster_url_and_cache(rating_key: str):
+    with get_connection() as conn:
+        movie = _get_movie_from_db_from_rating_key(conn, rating_key)
+        if movie:
+            if not movie.get("tmdb_poster_url"):
+                # we don't have it in the db yet.
+                poster_url = overseerr.get_movie_poster_url(rating_key)
+                conn.execute(
+                    "UPDATE movies SET tmdb_poster_url = ? WHERE rating_key = ?",
+                    (poster_url, rating_key)
+                )
+                conn.commit()
+                return poster_url
+            else:
+                return movie["tmdb_poster_url"]
+        return None
         
 
 def populate_users_table():
@@ -759,7 +830,8 @@ def populate_movies():
                             })
 
                         # at the same time, we want to record the user's watch of the movie in movie_watches.
-                        movie_id = _get_movie_id_from_name_year(conn, movie["title"], movie["year"])
+                        tmp = _get_movie_from_name_year(conn, movie["title"], movie["year"])
+                        movie_id = tmp["movie_id"]
                         user_id = user["user_id"]
                         started = movie["started"]
                         stopped = movie["stopped"]
@@ -1025,7 +1097,8 @@ def init_db():
                 requested_at INTEGER NOT NULL,
                 status INTEGER NOT NULL,
                 updated_at INTEGER NOT NULL,
-                user_id INTEGER NOT NULL REFERENCES users(user_id)
+                user_id INTEGER,
+                tmdb_poster_url TEXT
             );
         """)
 
