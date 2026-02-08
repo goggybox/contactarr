@@ -135,7 +135,7 @@ def get_seasons(rating_key):
 
 def get_users():
     # get the first 5 attributes from the /get_users endpoint
-    users = getFromAPI("get_users")
+    users = getFromAPI("get_users", forceFresh=True)
     if not users or not users['data']:
         return
 

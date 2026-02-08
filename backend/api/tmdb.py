@@ -62,3 +62,7 @@ def getFromAPI(cmd, args=None, forceFresh=False):
 def get_movie(tmdbId):
     # get details about a movie from tmdb
     return getFromAPI(f"movie/{tmdbId}")
+
+def get_show(tmdbId):
+    # get details about a show from tmdb
+    return getFromAPI(f"tv/{tmdbId}")
