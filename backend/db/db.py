@@ -106,6 +106,24 @@ def _get_movie_from_db_from_rating_key(conn, rating_key):
         return None
     return dict(row)
 
+def _get_movie_request_from_request_id(conn, request_id):
+    row = conn.execute(
+        "SELECT * FROM movie_requests WHERE request_id = ?",
+        (int(request_id),)
+    ).fetchone()
+    if row is None:
+        return None
+    return dict(row)
+
+def _get_show_request_from_request_id(conn, request_id):
+    row = conn.execute(
+        "SELECT * FROM show_requests WHERE request_id = ?",
+        (int(request_id),)
+    ).fetchone()
+    if row is None:
+        return None
+    return dict(row)
+
 def _get_show_from_db_from_rating_key(conn, rating_key):
     row = conn.execute(
         "SELECT * FROM shows WHERE rating_key = ?",
@@ -394,6 +412,13 @@ def process_movie_request(request, movies_table):
                     obtained_movie = _get_movie_from_name_year(conn, movie_name, movie_year)
                     movie_id = obtained_movie["movie_id"]
                     rating_key = obtained_movie["rating_key"]
+
+                    # also, add tmdb_id to table entry
+                    _update_row_or_ignore(conn,
+                        "movie_id, tmdb_id",
+                        [movie_id, tmdb_movie_details["id"]],
+                        "movies"
+                    )
                 else:
                     # wasn't already in table, we added it.
                     print(f"Added movie {tmdb_movie_details["title"]} ({extract_year_from_yyyy_dd_mm(tmdb_movie_details["release_date"])}) to movies table. (MOVIE ID {movie_id}) (RATING KEY {rating_key} {type(rating_key)})")
@@ -407,6 +432,13 @@ def process_movie_request(request, movies_table):
                 movie_id = obtained_movie["movie_id"]
                 movie_name = obtained_movie["movie_name"]
                 movie_year = obtained_movie["year"]
+
+                # also, add tmdb_id to table entry
+                _update_row_or_ignore(conn,
+                    "movie_id, tmdb_id",
+                    [movie_id, tmdb_movie_details["id"]],
+                    "movies"
+                )
 
     # now, if the movie was already in the table, we got its id. if the movie wasn't in the table, we added it and got an id.
     # now add an entry to movie_requests for the obtained movie_id
@@ -429,10 +461,13 @@ def process_movie_request(request, movies_table):
                     "requested_at": get_unix_from_iso(request["createdAt"]),
                     "status": request["status"], # 1 = PENDING, 2 = APPROVED, 3 = DECLINED
                     "updated_at": get_unix_from_iso(request["updatedAt"]),
-                    "user_id": user_plex_id
+                    "user_id": user_plex_id,
+                    "overseerr_request_id": request["id"]
                 },
                 "return": "request_id"
             })
+
+            ## add overseerr request ID to entry
 
             print(f"Added request to movie_requests table for {movie_name} ({movie_year}): request ID {request_id}.")
 
@@ -480,6 +515,13 @@ def process_tv_request(request, shows_table):
                     show_id = obtained_show["show_id"]
                     rating_key = obtained_show["rating_key"]
 
+                    # also, add tmdb_id to table entry
+                    _update_row_or_ignore(conn,
+                        "show_id, tmdb_id",
+                        [show_id, tmdb_show_details["id"]],
+                        "shows"
+                    )
+
                 # wasn't already in table, we added it above.
                 print(f"Added show {tmdb_show_details["name"]} ({extract_year_from_yyyy_dd_mm(tmdb_show_details["first_air_date"])}) to shows table. (SHOW ID {show_id}) (RATING KEY {rating_key} {type(rating_key)})")
     else:
@@ -491,6 +533,13 @@ def process_tv_request(request, shows_table):
                 show_id = obtained_show["show_id"]
                 show_name = obtained_show["show_name"]
                 show_year = obtained_show["year"]
+
+                # also, add tmdb_id to table entry
+                _update_row_or_ignore(conn,
+                    "show_id, tmdb_id",
+                    [show_id, tmdb_show_details["id"]],
+                    "shows"
+                )
     
     # now, if the movie was already in the table, we got its id. if the movie wasn't in the table, we added it and got an id.
     # now add an entry to movie_requests for the obtained movie_id
@@ -529,19 +578,6 @@ def process_tv_request(request, shows_table):
                 if (username):
                     user_plex_id = _get_user_id_from_username(conn, username)
 
-                # request_id = _add_to_table(conn, {
-                #     "table": "show_requests",
-                #     "data": {
-                #         "show_id": show_id,
-                #         "requested_at": get_unix_from_iso(request["createdAt"]),
-                #         "status": request["status"], # 1 = PENDING, 2 = APPROVED, 3 = DECLINED
-                #         "updated_at": get_unix_from_iso(request["updatedAt"]),
-                #         "user_id": user_plex_id
-                #     },
-                #     "return": "request_id"
-                # })
-                # print(f"Added request to show_requests table for {show_name} ({show_year}): request ID {request_id}.")
-
             print(len(request["seasons"]))
             for season in request["seasons"]:
                 # for each requested season, get the season id for the seasonNumber of the request, add an entry to season_requests.
@@ -555,7 +591,8 @@ def process_tv_request(request, shows_table):
                         "requested_at": get_unix_from_iso(season["createdAt"]),
                         "status": season["status"],
                         "updated_at": get_unix_from_iso(season["updatedAt"]),
-                        "user_id": user_plex_id
+                        "user_id": user_plex_id,
+                        "overseerr_request_id": request["id"]
                     },
                     "return": "request_id"
                 })
@@ -564,23 +601,49 @@ def process_tv_request(request, shows_table):
                     print(f"    season_id: {season_id}, show_id: {show_id}, requested_at: {get_unix_from_iso(season["createdAt"])}, updated_at: {get_unix_from_iso(season["updatedAt"])}, user_id: {user_plex_id}")
                     print(f"    tried to get season id {season_id}. Did get_season_id_from_show_id_season_num(conn, {show_id}, {season_num})")
 
-def get_movie_poster_url_and_cache(rating_key: str):
+def get_user_requests(user_id):
+    """
+    get all requests for a given user (combines movie+tv requests).
+    requests will be sorted from most to least recent
+    """
+    query = """
+        SELECT
+            'movie' AS type,
+            request_id,
+            movie_id AS movie_id,
+            NULL AS show_id,
+            NULL AS season_id,
+            requested_at,
+            status,
+            updated_at,
+            overseerr_request_id
+        FROM movie_requests
+        WHERE user_id = ?
+
+        UNION ALL
+
+        SELECT
+            'show' AS type,
+            request_id,
+            NULL AS movie_id,
+            show_id AS show_id,
+            season_id AS season_id,
+            requested_at,
+            status,
+            updated_at,
+            overseerr_request_id
+        FROM season_requests
+        WHERE user_id = ?
+
+        ORDER BY requested_at DESC
+
+    """
+
     with get_connection() as conn:
-        movie = _get_movie_from_db_from_rating_key(conn, rating_key)
-        if movie:
-            if not movie.get("tmdb_poster_url"):
-                # we don't have it in the db yet.
-                poster_url = overseerr.get_movie_poster_url(rating_key)
-                conn.execute(
-                    "UPDATE movies SET tmdb_poster_url = ? WHERE rating_key = ?",
-                    (poster_url, rating_key)
-                )
-                conn.commit()
-                return poster_url
-            else:
-                return movie["tmdb_poster_url"]
-        return None
-        
+        conn.row_factory = sqlite3.Row
+        cur = conn.execute(query, (user_id, user_id))
+        return [dict(row) for row in cur.fetchall()]
+
 
 def populate_users_table():
     """
@@ -1186,7 +1249,8 @@ def init_db():
                 requested_at INTEGER NOT NULL,
                 status INTEGER NOT NULL,
                 updated_at INTEGER,
-                user_id INTEGER NOT NULL REFERENCES users(user_id)
+                user_id INTEGER NOT NULL REFERENCES users(user_id),
+                UNIQUE(season_id, requested_at, user_id)
             );
         """)
 
@@ -1248,7 +1312,8 @@ def init_db():
                 status INTEGER NOT NULL,
                 updated_at INTEGER NOT NULL,
                 user_id INTEGER,
-                tmdb_poster_url TEXT
+                tmdb_poster_url TEXT,
+                UNIQUE(movie_id, requested_at, user_id)
             );
         """)
 

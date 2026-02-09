@@ -137,6 +137,11 @@ def ove_get_requests():
 def ove_get_movie_poster_url(data: APIModel):
     return db.get_movie_poster_url_and_cache(data.key)
 
+@router.post("/overseerr/get_user_requests")
+def ove_get_user_requests(data: APIModel):
+    print(data)
+    return db.get_user_requests(data.key)
+
 # ---------------------------------------- #
 #                   SMTP                   #
 # ---------------------------------------- #

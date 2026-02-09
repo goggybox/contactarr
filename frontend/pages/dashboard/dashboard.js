@@ -562,6 +562,14 @@ window.onload = async function() {
         users = await res.json();
         displayUsers(users);
         displayEmail(selected_email);
+
+        const e = await fetch("/backend/overseerr/get_user_requests", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({key: "31427928"})
+        });
+        const y = await e.json();
+        console.log(y);
     } catch (error) {
         console.error("Dashboard initialisation error: ", error);
         displayTautulliError();
