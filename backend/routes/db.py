@@ -274,6 +274,14 @@ def link_tautulli():
 def link_overseerr():
     return db.link_overseerr()
 
+@router.post("/get_movie_poster_image")
+def get_movie_poster_image(data: APIModel):
+    return db.get_poster_image(movie_id=data.key)
+
+@router.post("/get_show_poster_image")
+def get_show_poster_image(data: APIModel):
+    return db.get_poster_image(show_id=data.key)
+
 @router.get("/get_users")
 def get_users():
     return db.get_users()

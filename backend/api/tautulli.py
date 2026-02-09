@@ -26,6 +26,36 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from backend.api.cache import apiGet, clearCache
 from backend.api import config
+from urllib.parse import urlencode
+
+def get_poster_image(tautulli_poster_url: str) -> bytes | None:
+    if not tautulli_poster_url:
+        return None
+
+    cnf = config.get_tautulli_config()
+    api_key = cnf.get("api_key")
+    api_url = cnf.get("api_url")
+
+    if not api_key or not api_url:
+        return None
+
+    params = {
+        "apikey": api_key,
+        "cmd": "pms_image_proxy",
+        "img": tautulli_poster_url,
+    }
+
+    print("TRYING")
+    try:
+        r = requests.get(api_url, params=params, timeout=15)
+        if r.status_code == 200:
+            print("SUCCESS")
+            print(r.content)
+            return r.content
+    except Exception:
+        pass
+
+    return None
 
 def getFromAPI(cmd, args=None, forceFresh=False):
     """

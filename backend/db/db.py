@@ -22,6 +22,7 @@
 
 import sqlite3
 import time
+import os
 from pathlib import Path
 from datetime import datetime
 from datetime import timezone
@@ -31,6 +32,78 @@ from backend.api import config
 from backend.api import tmdb
 
 DB_PATH = Path(__file__).parent / "contactarr.db"
+POSTER_CACHE_DIR = ".image_cache/posters"
+os.makedirs(POSTER_CACHE_DIR, exist_ok=True)
+
+def _poster_cache_path(media_type: str, media_id: int) -> str:
+    return os.path.join(POSTER_CACHE_DIR, f"{media_type}_{media_id}.jpg")
+
+def load_cached_poster(media_type: str, media_id: int) -> bytes | None:
+    path = _poster_cache_path(media_type, media_id)
+    if os.path.exists(path):
+        with open(path, "rb") as f:
+            return f.read()
+    return None
+
+def save_cached_poster(media_type: str, media_id: int, data: bytes):
+    path = _poster_cache_path(media_type, media_id)
+    print("HELLO")
+    with open(path, "wb") as f:
+        f.write(data)
+
+def get_poster_image(*, movie_id=None, show_id=None):
+    """
+    return the poster image bytes for a movie OR show.
+    tautlli is preferred for sourcing posters, tmdb if no tautulli url is known
+    """
+    if (movie_id is None) == (show_id is None):
+        raise ValueError("Provide exactly one of movie_id or show_id")
+
+    if movie_id is not None:
+        media_type = "movie"
+        media_id = movie_id
+        table = "movies"
+        id_col = "movie_id"
+    else:
+        media_type = "show"
+        media_id = show_id
+        table = "shows"
+        id_col = "show_id"
+
+    cached = load_cached_poster(media_type, media_id)
+    if cached:
+        return cached
+
+    # no cached image. fetch from tautulli/tmdb
+    with get_connection() as conn:
+        conn.row_factory = sqlite3.Row
+        row = conn.execute(
+            f"""
+            SELECT tautulli_poster_url, tmdb_poster_url
+            FROM {table}
+            WHERE {id_col} = ?
+            """,
+            (media_id,),
+        ).fetchone()
+
+    if not row:
+        return None
+
+    image = None
+    print(row["tautulli_poster_url"])
+    if row["tautulli_poster_url"]:
+        image = tautulli.get_poster_image(row["tautulli_poster_url"])
+
+    if image is None and row["tmdb_poster_url"]:
+        image = tmdb.get_poster_image(row["tmdb_poster_url"])
+
+    if image is None:
+        print("NONE")
+        return None
+
+    save_cached_poster(media_type, media_id, image)
+    return image
+
 
 class SafeConnection:
     def __init__(self, conn):
@@ -288,6 +361,8 @@ def _add_or_ignore_to_table(conn, spec: dict):
         return row[0] if row else None
 
     return
+
+
 
 def get_connection():
     if not DB_PATH.exists():
