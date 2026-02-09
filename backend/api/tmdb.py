@@ -27,6 +27,8 @@ from dotenv import load_dotenv
 from backend.api.cache import apiGet, clearCache
 from backend.api import config
 
+TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w600_and_h900_face"
+
 def getFromAPI(cmd, args=None, forceFresh=False):
     cnf = config.get_tmdb_config()
     api_key = cnf['api_key']
@@ -66,3 +68,18 @@ def get_movie(tmdbId):
 def get_show(tmdbId):
     # get details about a show from tmdb
     return getFromAPI(f"tv/{tmdbId}")
+
+def get_poster_image(tmdb_poster_url: str) -> bytes | None:
+    if not tmdb_poster_url:
+        return None
+
+    url = f"{TMDB_IMAGE_BASE}{tmdb_poster_url}"
+
+    try:
+        r = requests.get(url, timeout=15)
+        if r.status_code == 200:
+            return r.contents
+    except Exception:
+        pass
+
+    return None
