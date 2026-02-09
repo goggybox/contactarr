@@ -47,7 +47,6 @@ def load_cached_poster(media_type: str, media_id: int) -> bytes | None:
 
 def save_cached_poster(media_type: str, media_id: int, data: bytes):
     path = _poster_cache_path(media_type, media_id)
-    print("HELLO")
     with open(path, "wb") as f:
         f.write(data)
 
@@ -90,7 +89,6 @@ def get_poster_image(*, movie_id=None, show_id=None):
         return None
 
     image = None
-    print(row["tautulli_poster_url"])
     if row["tautulli_poster_url"]:
         image = tautulli.get_poster_image(row["tautulli_poster_url"])
 
@@ -98,7 +96,6 @@ def get_poster_image(*, movie_id=None, show_id=None):
         image = tmdb.get_poster_image(row["tmdb_poster_url"])
 
     if image is None:
-        print("NONE")
         return None
 
     save_cached_poster(media_type, media_id, image)
@@ -846,6 +843,8 @@ def populate_shows():
                             },
                             "return": "show_id"
                         })
+                        if show["thumb"] == "/library/metadata/27/thumb/1766335013":
+                            print("NOT ANOTHER ONE!!")
 
                 # now consider seasons
                 seasons = tautulli.get_seasons(rating_key)
@@ -945,7 +944,7 @@ def populate_shows():
                                         "show_name": show_name,
                                         "year": show_year,
                                         "rating_key": show_rating_key,
-                                        "tautulli_poster_url": show["thumb"]
+                                        "tautulli_poster_url": show_metadata.get("thumb") if show_metadata else None
                                     },
                                     "return": "show_id"
                                 })
