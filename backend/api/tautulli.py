@@ -38,19 +38,15 @@ def get_poster_image(tautulli_poster_url: str) -> bytes | None:
 
     if not api_key or not api_url:
         return None
-
     params = {
         "apikey": api_key,
         "cmd": "pms_image_proxy",
         "img": tautulli_poster_url,
     }
 
-    print("TRYING")
     try:
         r = requests.get(api_url, params=params, timeout=15)
         if r.status_code == 200:
-            print("SUCCESS")
-            print(r.content)
             return r.content
     except Exception:
         pass
