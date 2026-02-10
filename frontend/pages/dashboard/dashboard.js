@@ -24,18 +24,34 @@ import { buildEmailHtml, sendIndividualEmailsWithProgress } from "./emailSender.
 
 // -------------------- vars and consts --------------------
 const INDENT = "  ";
-const DEFAULT_EMAIL_CONTENT = `<h2>Example Email Template</h2>
+const EMAIL_TYPES = {
+    SERVER: "server",
+    OVERSEERR: "overseerr"
+};
+
+const DEFAULTS = {
+    [EMAIL_TYPES.SERVER]: {
+        content: `<h2>Example Email Template</h2>
 <p>Dear Plex users,</p>
 <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec ac lectus eget lacus efficitur scelerisque. Mauris a lectus nec lectus pharetra congue et a ligula. Suspendisse velit nulla, dignissim sit amet imperdiet faucibus, dictum eget magna. Aenean sagittis risus in massa porttitor fermentum.</p>
-<p>Phasellus et libero vel tellus facilisis ultricies. Vivamus pellentesque lacus et elit vulputate, ut elementum arcu varius. Quisque sed maximus odio. Quisque ac leo iaculis, dapibus tortor id, cursus nisl. Nullam sagittis arcu sed dui suscipit pellentesque in id elit. Fusce nec semper risus. Suspendisse orci odio, posuere tempus quam id, commodo dictum arcu. Maecenas ac lacus quis massa euismod tincidunt et tristique quam. Vestibulum commodo bibendum efficitur.</p>`;
-
-const DEFAULT_FOOTER_CONTENT = `You can unsubscribe from email notifications by replying to this email.`;
+<p>Phasellus et libero vel tellus facilisis ultricies. Vivamus pellentesque lacus et elit vulputate, ut elementum arcu varius. Quisque sed maximus odio. Quisque ac leo iaculis, dapibus tortor id, cursus nisl. Nullam sagittis arcu sed dui suscipit pellentesque in id elit. Fusce nec semper risus. Suspendisse orci odio, posuere tempus quam id, commodo dictum arcu. Maecenas ac lacus quis massa euismod tincidunt et tristique quam. Vestibulum commodo bibendum efficitur.</p>`,
+        footer: `You can unsubscribe from email notifications by replying to this email.`
+    },
+    [EMAIL_TYPES.OVERSEERR]: {
+        content: `<p>Hi {{user}}</p>`,
+        footer: ``
+    }
+}
 
 export let selecting_users = false;
 export let selected_users = [];
 let users;
-let selected_email = "server"; // either "server" or "overseerr"
+let selected_email = EMAIL_TYPES.SERVER;
 let systemUpdatesUnsubscribeList = [];
+
+// -------------------- STORAGE MANAGEMENT --------------------
+
+const getStorageKey = (emailType, field) => `${emailType.charAt(0).toUpperCase() + emailType.slice(1)}${field}TextArea`;
 
 // -------------------- text area functions --------------------
 
@@ -111,22 +127,25 @@ function handleSingleLineIndent(textarea, rawStart, rawEnd, start, value, isUnin
 
 // -------------------- email content managers --------------------
 
-function loadEmailContent() {
-    const content = localStorage.getItem("ServerHTMLTextArea");
-    const footer = localStorage.getItem("ServerFooterTextArea");
+function loadEmailContent(emailType) {
+    const content = localStorage.getItem(getStorageKey(emailType, "HTML"));
+    const footer = localStorage.getItem(getStorageKey(emailType, "Footer"));
+    const defaults = DEFAULTS[emailType];
+    console.log(content);
 
     return {
-        content: (content === "" || content === null) ? DEFAULT_EMAIL_CONTENT : content,
-        footer: (footer === "" || footer === null) ? DEFAULT_FOOTER_CONTENT : footer
+        content: (content ?? "") === "" ? defaults.content : content,
+        footer:  (footer  ?? "") === "" ? defaults.footer  : footer
     };
 }
 
-function saveEmailContent(value) {
-    localStorage.setItem("ServerHTMLTextArea", value);
+function saveEmailContent(emailType, value) {
+    console.log("wat");
+    localStorage.setItem(getStorageKey(emailType, "HTML"), value);
 }
 
-function saveEmailFooter(value) {
-    localStorage.setItem("ServerFooterTextArea", value);
+function saveEmailFooter(emailType, value) {
+    localStorage.setItem(getStorageKey(emailType, "Footer"), value);
 }
 
 // -------------------- UI components --------------------
@@ -156,43 +175,42 @@ function createUserContainer(user, index, totalUsers) {
     const userName = document.createElement("div");
     userName.classList.add("user-name");
     
-    const name = document.createElement("p");
-    name.textContent = user.friendly_name ?? "-";
-    name.classList.add("name");
-    if (isUnsubscribed) { name.classList.add("unsubscribed"); } // make red when selecting
-    
-    const username = document.createElement("p");
-    username.textContent = user.username ?? "-";
-    username.classList.add("username");
-    if (isUnsubscribed) { username.classList.add("unsubscribed"); } // make red when selecting
-    
+    const name = createUserInfoElement(user.friendly_name ?? "-", "name", isUnsubscribed);
+    const username = createUserInfoElement(user.username ?? "-", "username", isUnsubscribed);
+
     userName.append(name, username);
 
-    const email = document.createElement("p");
-    email.textContent = user.email ?? "-";
-    email.classList.add("email");
-    if (isUnsubscribed) { email.classList.add("unsubscribed"); } // make red when selecting
+    const email = createUserInfoElement(user.email ?? "-", "email", isUnsubscribed);
 
     containerInfo.append(userName, email);
     userLeft.append(checkbox, containerInfo);
 
     const userRight = document.createElement("div");
     userRight.classList.add("user-right");
-    
-    const lastSeen = document.createElement("p");
-    lastSeen.textContent = user.last_seen_formatted ? `Seen ${user.last_seen_formatted}` : "";
-    lastSeen.classList.add("last-seen");
-    if (isUnsubscribed) { lastSeen.classList.add("unsubscribed"); } // make red when selecting
-    
-    const lastSeenDate = document.createElement("p");
-    lastSeenDate.textContent = user.last_seen_date ?? "Never Seen";
-    lastSeenDate.classList.add("last-seen-date");
-    if (isUnsubscribed) { lastSeenDate.classList.add("unsubscribed"); } // make red when selecting
-    
+
+    const lastSeen = createUserInfoElement(
+        user.last_seen_formatted ? `Seen ${user.last_seen_formatted}` : "",
+        "last-seen",
+        isUnsubscribed
+    );
+    const lastSeenDate = createUserInfoElement(
+        user.last_seen_date ?? "Never Seen",
+        "last-seen-date",
+        isUnsubscribed
+    );
+
     userRight.append(lastSeen, lastSeenDate);
     userContainer.append(userLeft, userRight);
-    
+
     return userContainer;
+}
+
+function createUserInfoElement(text, className, isUnsubscribed) {
+    const el = document.createElement("p");
+    el.textContent = text;
+    el.classList.add(className);
+    if (isUnsubscribed) { el.classList.add("unsubscribed"); }
+    return el;
 }
 
 async function fetchUnsubscribeLists() {
@@ -219,8 +237,10 @@ function displayUsers(users) {
     });
 
     document.getElementById("server-select-users-button").addEventListener("click", function() {
-        clickSelectUsersButton(this);
+        clickSelectUsersButton(this, EMAIL_TYPES.SERVER);
     });
+
+    // TODO: overseerr-select-users-button event clicker
 
     document.getElementById("select-subscribed-users-button").addEventListener("click", selectSubscribedUsers);
 
@@ -231,100 +251,65 @@ function displayUsers(users) {
 
 // -------------------- email display components --------------------
 
-function serverSelected() {
-    selected_email = "server";
-    displayEmail();
+function selectEmailType(emailType) {
+    selected_email = emailType;
+    updateEmailSelectorUI(emailType);
+    displayEmail(emailType);
 }
 
-function overseerrSelected() {
-    selected_email = "overseerr";
-    displayEmail();
+function updateEmailSelectorUI(emailType) {
+    const isServer = emailType === EMAIL_TYPES.SERVER;
+    document.getElementById("server-selector").classList.toggle("selected", isServer);
+    document.getElementById("overseerr-selector").classList.toggle("selected", !isServer);
+    document.getElementById("server-inner-email-container").classList.toggle("hidden", !isServer);
+    document.getElementById("overseerr-inner-email-container").classList.toggle("hidden", isServer);
 }
 
-function displayEmail() {
-    if (selected_email === "server") {
-        displayServerEmail();
-    } else if (selected_email === "overseerr") {
-        displayOverseerrEmail();
-    }
-}
-
-function displayServerEmail() {
-    // change selector styles
-    document.getElementById("server-selector").classList.add("selected");
-    document.getElementById("overseerr-selector").classList.remove("selected");
-    document.getElementById("server-inner-email-container").classList.remove("hidden");
-    document.getElementById("overseerr-inner-email-container").classList.add("hidden");
-
-    const embedContainer = document.getElementById("server-embed-container");
+function displayEmail(emailType) {
+    const embedContainer = document.getElementById(`${emailType}-embed-container`);
     embedContainer.innerHTML = "";
 
-    const serverEmailContainer = document.createElement("div");
-    serverEmailContainer.classList.add("server-email-container");
+    const emailContainer = document.createElement("div");
+    emailContainer.classList.add(`${emailType}-email-container`);
 
     const img = document.createElement("img");
-    img.classList.add("server-banner");
-    img.src = '/emails/server/banner.png';
+    img.classList.add(`${emailType}-banner`);
+    img.src = `emails/${emailType}/banner.png`;
 
     const contentContainer = document.createElement("div");
-    contentContainer.id = "server-content-container";
+    contentContainer.id = `${emailType}-content-container`;
 
     const footer = document.createElement("div");
-    footer.classList.add("server-footer");
+    footer.classList.add(`${emailType}-footer`);
     const footerP = document.createElement("p");
-    footerP.id = "server-footer-text";
+    footerP.id = `${emailType}-footer-text`;
     footer.appendChild(footerP);
 
-    serverEmailContainer.append(img, contentContainer, footer);
-    embedContainer.appendChild(serverEmailContainer);
+    emailContainer.append(img, contentContainer, footer);
 
-    const { contentTextarea, footerTextarea } = setupEmailEditors(contentContainer, footerP);
-    
-    const saved = loadEmailContent();
+    embedContainer.appendChild(emailContainer);
+
+    const { contentTextarea, footerTextarea } = setupEmailEditors(emailType, contentContainer, footerP);
+
+    const saved = loadEmailContent(emailType);
     contentTextarea.value = saved.content;
     footerTextarea.value = saved.footer;
-    
     contentContainer.innerHTML = saved.content;
     footerP.textContent = saved.footer;
 }
 
-function displayOverseerrEmail() {
-    // change selector styles
-    document.getElementById("server-selector").classList.remove("selected");
-    document.getElementById("overseerr-selector").classList.add("selected");
-    document.getElementById("server-inner-email-container").classList.add("hidden");
-    document.getElementById("overseerr-inner-email-container").classList.remove("hidden");
-
-    const embedContainer = document.getElementById("overseerr-embed-container");
-    embedContainer.innerHTML = "";
-
-    const overseerrEmailContainer = document.createElement("div");
-    overseerrEmailContainer.classList.add("overseerr-email-container");
-
-    const img = document.createElement("img");
-    img.classList.add("overseerr-banner");
-    img.src = '/emails/overseerr/banner.png';
-
-    const contentContainer = document.createElement("div");
-    contentContainer.id = "overseerr-content-container";
-    contentContainer.innerHTML = `<p>Hi goggybox!</p>`
-
-    overseerrEmailContainer.append(img, contentContainer);
-    embedContainer.appendChild(overseerrEmailContainer);
-}
-
-function setupEmailEditors(contentContainer, footerElement) {
-    const contentTextarea = document.getElementById("htmlInput");
-    const footerTextarea = document.getElementById("footerInput");
+function setupEmailEditors(email, contentContainer, footerElement) {
+    const contentTextarea = document.getElementById(`${email}-htmlInput`);
+    const footerTextarea = document.getElementById(`${email}-footerInput`);
 
     contentTextarea.addEventListener('input', () => {
         contentContainer.innerHTML = contentTextarea.value;
-        saveEmailContent(contentTextarea.value);
+        saveEmailContent(email, contentTextarea.value);
     });
 
     footerTextarea.addEventListener('input', () => {
         footerElement.textContent = footerTextarea.value;
-        saveEmailFooter(footerTextarea.value);
+        saveEmailFooter(email, footerTextarea.value);
     });
 
     contentTextarea.addEventListener('keydown', (e) => handleTabIndentation(contentTextarea, e));
@@ -348,7 +333,41 @@ function displayTautulliError() {
 
 // -------------------- user selection --------------------
 
-function clickSelectUsersButton(button) {
+/**
+ * called when "Select Users" button is clicked. calls separate handlers
+ * depending on whether the Server or Overseerr email is selected.
+ * @param {*} button 
+ * @param {*} emailType 
+ */
+function clickSelectUsersButton(button, emailType) {
+
+    if (emailType === EMAIL_TYPES.OVERSEERR) {
+        // call custom handler for overseerr
+        handleOverseerrSelection(button, users, selected_users);
+    }
+    else if (emailType === EMAIL_TYPES.SERVER) {
+        handleServerSelection(button, users, selected_users);
+    }
+}
+
+/**
+ * custom handler for user selection when the Overseerr email is selected.
+ * rather than being able to pick any user, you can only pick one.
+ * @param {*} button 
+ * @param {*} allUsers 
+ * @param {*} currentlySelected 
+ */
+function handleOverseerrSelection(button, allUsers, currentlySelected) {
+    // TODO: implement function
+}
+
+/**
+ * custom handler for user selection when the server email is selected.
+ * you can pick multiple users, as opposed to just one with Overseerr.
+ * @param {*} buton 
+ */
+function handleServerSelection(button) {
+
     selecting_users = !selecting_users;
     button.classList.toggle("selecting", selecting_users);
     button.textContent = selecting_users ? "Cancel Selection" : "Select Users";
@@ -448,7 +467,23 @@ function deselectAllUsers() {
 
 // -------------------- send email --------------------
 
-async function sendEmail() {
+async function sendEmail(emailType) {
+
+    if (emailType === EMAIL_TYPES.OVERSEERR) {
+        await sendOverseerrEmail();
+    }
+    else if (emailType === EMAIL_TYPES.SERVER) {
+        await sendServerEmail();
+    }
+
+}
+
+async function sendOverseerrEmail() {
+    // TODO: implement
+}
+
+async function sendServerEmail() {
+
     // get selected users' email address
     const selectedUserData = users.filter(u => selected_users.includes(u.username));
     const recipientEmails = selectedUserData.map(u => u.email).filter(e => e && e !== "-");
@@ -458,18 +493,18 @@ async function sendEmail() {
         return;
     }
 
-    const subject = document.getElementById("subjectInput").value;
+    const subject = document.getElementById("server-subjectInput").value;
     if (!subject.trim()) {
         showError("You must enter a valid sender address.");
         console.log("No valid subject");
         return;
     }
 
-    const contentHtml = document.getElementById("htmlInput").value;
-    const footerHtml = document.getElementById("footerInput").value;
+    const contentHtml = document.getElementById("server-htmlInput").value;
+    const footerHtml = document.getElementById("server-footerInput").value;
     const fullHtml = buildEmailHtml(contentHtml, footerHtml);
 
-    const sender = document.getElementById("senderInput").value;
+    const sender = document.getElementById("server-senderInput").value;
 
     if (!sender) {
         console.log("No sender");
@@ -477,22 +512,14 @@ async function sendEmail() {
     }
 
     const confirmed = await showConfirm(
-        `Are you sure you want to send this email to ${recipientEmails.length}?\n\n` +
+        `Are you sure you want to send this email to ${recipientEmails.length} recipients?\n\n` +
         `Subject: ${subject}\n` +
         `Sender: ${sender}`
     );
 
     if (!confirmed) { return; }
 
-    const progressContainer = document.createElement("div");
-    progressContainer.className = "email-progress-container";
-    progressContainer.innerHTML = `
-        <div class="email-progress-bar">
-            <div class="email-progress-fill" style="width: 0%"></div>
-        </div>
-        <p class="email-progress-text">Sending 0 of ${recipientEmails.length}...</p>
-        <p class="email-progress-status"></p>
-    `;
+    const progressContainer = createProgressContainer(recipientEmails.length);
     document.body.appendChild(progressContainer);
 
     const progressFill = progressContainer.querySelector(".email-progress-fill");
@@ -508,43 +535,65 @@ async function sendEmail() {
             fullHtml,
             recipientEmails,
             sender,
-            {
-                onStart: (data) => {
-                    console.log(`Starting to send ${data.total} emails.`);
-                },
-                onProgress: (data) => {
-                    const percent = (data.current / data.total) * 100;
-                    progressFill.style.width = `${percent}%`;
-                    progressText.textContent = `Sending ${data.current} of ${data.total}...`;
-                    progressStatus.textContent = data.status === "success" ? `✓ ${data.recipient}` : `X ${data.recipient} (failed)`;
-                    progressStatus.className = data.status === "success" ? "email-progress-status success" : "email-progress-status error";
-                },
-                onComplete: (data) => {
-                    progressFill.style.width = "100%";
-                    progressText.textContent = `Complete! ${data.successful} sent, ${data.failed} failed`;
-                    setTimeout(() => {
-                        progressContainer.remove();
-                        if (data.failed === 0) {
-                            console.log(`Email sent successfully to ${data.successful} recipient(s)`);
-                            deselectAllUsers();
-                        } else if (data.successful > 0) {
-                            console.log(`Partial success: ${data.successful} sent, ${data.failed} failed.`);
-                        } else {
-                            console.log(`All emails failed to send.`);
-                        }
-                    }, 1000);
-                },
-                onError: (message) => {
-                    progressContainer.remove();
-                    console.log(`Failed: ${message}`);
-                }
-            }
+            createProgressHandlers(progressContainer, sendBtn)
         );
     } catch (error) {
         progressContainer.remove();
         console.log(`Failed to send emails: ${error.message}`);
     } finally {
         sendBtn.classList.remove("disabled");
+    }
+}
+
+function createProgressContainer(total) {
+    const progressContainer = document.createElement("div");
+    progressContainer.className = "email-progress-container";
+    progressContainer.innerHTML = `
+        <div class="email-progress-bar">
+            <div class="email-progress-fill" style="width: 0%"></div>
+        </div>
+        <p class="email-progress-text">Sending 0 of ${total}...</p>
+        <p class="email-progress-status"></p>
+    `;
+    return container;
+}
+
+function createProgressHandlers(container, sendBtn) {
+    const progressFill = container.querySelector(".email-progress-fill");
+    const progressText = container.querySelector(".email-progress-text");
+    const progressStatus = container.querySelector(".email-progress-status");
+
+    return {
+        onStart: (data) => {
+            console.log(`Starting to send ${data.total} emails.`);
+        },
+        onProgress: (data) => {
+            const percent = (data.current / data.total) * 100;
+            progressFill.style.width = `${percent}%`;
+            progressText.textContent = `Sending ${data.current} of ${data.total}...`;
+            progressStatus.textContent = data.status === "success" ? `✓ ${data.recipient}` : `X ${data.recipient} (failed)`;
+            progressStatus.className = data.status === "success" ? "email-progress-status success" : "email-progress-status error";
+        },
+        onComplete: (data) => {
+            progressFill.style.width = "100%";
+            progressText.textContent = `Complete! ${data.successful} sent, ${data.failed} failed`;
+            setTimeout(() => {
+                progressContainer.remove();
+                if (data.failed === 0) {
+                    console.log(`Email sent successfully to ${data.successful} recipient(s)`);
+                    deselectAllUsers();
+                } else if (data.successful > 0) {
+                    console.log(`Partial success: ${data.successful} sent, ${data.failed} failed.`);
+                } else {
+                    console.log(`All emails failed to send.`);
+                }
+            }, 1000);
+        },
+        onError: (message) => {
+            progressContainer.remove();
+            console.log(`Failed: ${message}`);
+            sendBtn.classList.remove("disabled");
+        }
     }
 }
 
@@ -568,9 +617,9 @@ window.onload = async function() {
     }
 
     // add event listener to send email button
-    document.getElementById("send-email-button").addEventListener("click", sendEmail);
+    document.getElementById("send-email-button").addEventListener("click", () => sendEmail(selected_email));
 
     // add event listener to server and overseerr email buttons
-    document.getElementById("server-selector").addEventListener("click", serverSelected);
-    document.getElementById("overseerr-selector").addEventListener("click", overseerrSelected);
-}
+    document.getElementById("server-selector").addEventListener("click", () => selectEmailType(EMAIL_TYPES.SERVER));
+    document.getElementById("overseerr-selector").addEventListener("click", () => selectEmailType(EMAIL_TYPES.OVERSEERR));
+};

@@ -277,6 +277,14 @@ MODIFIED TO APPLY TO HORIZONTAL EDGES
     padding-top: 0;
 }
 
+#overseerr-user-select-container {
+    display: flex;
+}
+
+#overseerr-user-select-container textarea {
+    width: 250px;
+}
+
 .email-element-container {
     display: grid;
     gap: 5px;
