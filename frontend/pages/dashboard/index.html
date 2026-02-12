@@ -58,7 +58,7 @@ Please keep this header comment in all copies of the program.
     <!-- notification modals will be dynamically added here... -->
     <!--     (modals that will not cover the full screen)      -->
   </div>
-  <div class="content-wrapper">
+  <div class="content-wrapper" id="content-wrapper">
     <div class="content">
       <div class="user-list-container">
         <h2>Users</h2>
@@ -138,9 +138,41 @@ Please keep this header comment in all copies of the program.
             </div>
             <div class="email-element-container">
               <p class="html-email-text">User</p>
-              <div id="overseerr-user-select-container">
-                <textarea class="email-input" id="overseerr-footerInput" rows="1"></textarea>
-                <div>HEY</div>
+              <div class="email-select-container" id="overseerr-user-select-container">
+                <textarea disabled class="email-input" id="overseerr-userInput" rows="1"></textarea>
+                <p class="select-users-button" id="overseerr-select-users-button">
+                  Select User
+                </p>
+              </div>
+            </div>
+            <div class="email-element-container hidden" id="overseerr-request-container">
+              <p class="html-email-text">Request</p>
+              <div class="email-select-container" id="overseerr-request-select-container">
+                <div id="overseerr-request-selector">
+                  <textarea disabled class="email-input" id="overseerr-requestInput" rows="1"></textarea>
+                  <div id="overseerr-request-dropdown" class="hidden">
+                    <div id="overseerr-request">
+                      <div id="overseerr-request-badge">
+                      </div>
+                      <div id="overseerr-request-text">
+                        <div id="media-title-container">
+                          <p id="media-title-name">Movie TitleTitle</p>
+                          <p id="media-title-year">(2023)</p>
+                        </div>
+                        <div id="request-info-container">
+                          <p id="requested-at">MOVIE | Requested 12/02 at 09:30</p>
+                        </div>
+                      </div>
+                      <div id="request-status">
+                        <p id="status-summary">DECLINED</p>
+                        <p id="status-detail">12/02 at 11:00</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <p class="select-users-button" id="overseerr-select-requests-button">
+                  Select Request
+                </p>
               </div>
             </div>
           </div>

@@ -27,6 +27,7 @@ Please keep this header comment in all copies of the program.
     display: flex;
     gap: 50px;
     min-height: 0px;
+    overflow: visible;
 }
 
 #select-users-buttons {
@@ -277,13 +278,11 @@ MODIFIED TO APPLY TO HORIZONTAL EDGES
     padding-top: 0;
 }
 
-#overseerr-user-select-container {
+.email-select-container {
     display: flex;
+    gap: 5px;
 }
 
-#overseerr-user-select-container textarea {
-    width: 250px;
-}
 
 .email-element-container {
     display: grid;
@@ -309,6 +308,20 @@ MODIFIED TO APPLY TO HORIZONTAL EDGES
     color: var(--tertiary-text-colour);
 }
 
+#overseerr-userInput, #overseerr-requestInput {
+    user-select: none;
+    width: 350px;
+}
+
+#overseerr-requestInput {
+    box-shadow: var(--bottom-shadow, 0 0 0 0 rgba(0,0,0,0));
+    position: relative;
+    z-index: 2;
+}
+#overseerr-requestInput.bottom-shadow {
+    --bottom-shadow: 0 8px 12px -4px rgba(0,0,0,0.15);
+}
+
 .select-users-button {
     user-select: none;
     cursor: pointer;
@@ -322,6 +335,121 @@ MODIFIED TO APPLY TO HORIZONTAL EDGES
 }
 .select-users-button:hover {
     background: var(--primary-accent-colour);
+}
+#overseerr-select-users-button, #overseerr-select-requests-button {
+    margin-top: 5px;
+    height: 36px;
+}
+
+#overseerr-request-container {
+    place-items: start;
+}
+#overseerr-request-container .html-email-text {
+    margin-top: 9px;
+}
+#overseerr-request-container.hidden {
+    display: none;
+}
+
+#overseerr-request-selector {
+    position: relative;
+    margin-bottom: 20px;
+}
+#overseerr-request-dropdown {
+    top: 100%;
+    right: 0;
+    min-height: 42px;
+    border: 3px solid var(--secondary-background-colour);
+    border-top: 0;
+    max-height: 230px;
+    overflow-y: auto;
+    background: var(--primary-input-box-colour);
+    width: 100%;
+    box-shadow: rgba(0, 0, 0, 0.25) 0px 54px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px;
+}
+#overseerr-request-dropdown.hidden {
+    display: none;
+}
+
+#overseerr-request {
+    display: grid;
+    grid-template-columns: min-content 1fr max-content;
+    padding: 5px 5px;
+    border-bottom: 1px solid rgba(0,0,0,0.25);
+}
+#overseerr-request:hover {
+    background: rgba(0,0,0,0.1);
+}
+
+#overseerr-request-badge {
+    width: 10px;
+    height: 10px;
+    /* background: var(--overseerr-declined-colour); */
+    border-radius: 50px;
+    margin-top: 4px;
+}
+
+#overseerr-request-text {
+    margin-left: 2px;
+    height: 42px;
+    max-width: 230px;
+    overflow-x: auto;
+    background:
+    /* Shadow covers */
+    linear-gradient(90deg, var(--user-container-info-background-colour) 30%, rgba(255, 255, 255, 0)),
+    linear-gradient(270deg, var(--user-container-info-background-colour) 30%, rgba(255,255,255,0)) 100% 0,
+
+    /* Shadows */
+    radial-gradient(farthest-side at 0 50%, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0)),
+    radial-gradient(farthest-side at 100% 50%, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0)) 100% 0;
+    background-repeat: no-repeat;
+    background-color: var(--user-container-info-background-colour);
+
+    background-size: 40px 100%, 40px 100%, 14px 100%, 14px 100%;
+
+    /* Opera doesn't support this in the shorthand */
+    background-attachment: local, local, scroll, scroll;
+}
+
+#media-title-container {
+    display: flex;
+    max-width: 250px;
+    min-width: fit-content;
+    padding-right: 10px;
+    font-weight: 1000;
+    white-space: nowrap;
+}
+
+#media-title-name {
+    font-size: 16px;
+    white-space: nowrap;
+}
+#media-title-year {
+    font-size: 16px;
+    white-space: nowrap;
+}
+
+#request-status {
+    justify-content: end;
+    text-align: end;
+    white-space: nowrap;
+}
+#request-info-container {
+    font-size: 12px;
+    color: var(--tertiary-text-colour);
+    white-space: nowrap;
+}
+#requested-at {
+    white-space: nowrap;
+}
+
+#status-summary {
+    font-weight: 500;
+    color: var(--overseerr-declined-colour);
+}
+#status-detail {
+    font-size: 12px;
+    color: var(--tertiary-text-colour);
 }
 
 .select-users-button.selecting {

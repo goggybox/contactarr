@@ -132,7 +132,7 @@ def ove_alive():
 @router.get("/overseerr/get_requests")
 def ove_get_requests():
     return overseerr.get_requests()
-
+    
 @router.post("/overseerr/get_movie_poster_url")
 def ove_get_movie_poster_url(data: APIModel):
     return db.get_movie_poster_url_and_cache(data.key)

@@ -94,7 +94,7 @@ def set_url(val: str):
     return config.set_config_value("OVERSEERR_API_URL", val)
 
 def get_requests():
-    response = getFromAPI("request", [{"take": 9999999}])
+    response = getFromAPI("request", [{"take": 9999999}], forceFresh=True)
     if response and response.get("results"):
         return response["results"]
 
