@@ -37,6 +37,7 @@ Please keep this header comment in all copies of the program.
   <link rel="stylesheet" href="/emails/server/server.css">
   <link rel="stylesheet" href="/emails/overseerr/overseerr.css">
   <link rel="stylesheet" href="../../modals/confirmation/confirmation.css">
+  <link rel="stylesheet" href="/components/jobIndicators/jobs.css">
 </head>
 <body>
   <div class="sidebar">
@@ -58,6 +59,7 @@ Please keep this header comment in all copies of the program.
     <!-- notification modals will be dynamically added here... -->
     <!--     (modals that will not cover the full screen)      -->
   </div>
+  <div id="job-container"></div>
   <div class="content-wrapper" id="content-wrapper">
     <div class="content">
       <div class="user-list-container">
@@ -186,5 +188,6 @@ Please keep this header comment in all copies of the program.
   <script type="module" src="/pages/dashboard/emailSender.js"></script>
   <script src="/modals/notification/notification.js"></script>
   <script src="../../modals/confirmation/confirmation.js"></script>
+  <script src="/components/jobIndicators/jobs.js" defer></script>
 </body>
 </html>
