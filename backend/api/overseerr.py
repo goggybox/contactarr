@@ -64,6 +64,7 @@ def getFromAPI(cmd, args=None, forceFresh=False):
 def alive():
     """check if the overseerr instance is alive"""
     response = getFromAPI("status")
+    print(response)
     return True if response != None else False
 
 def apikey():

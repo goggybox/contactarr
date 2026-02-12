@@ -371,6 +371,11 @@ MODIFIED TO APPLY TO HORIZONTAL EDGES
     display: none;
 }
 
+#overseerr-request-dropdown * {
+    user-select: none;
+    cursor: pointer;
+}
+
 #overseerr-request {
     display: grid;
     grid-template-columns: min-content 1fr max-content;

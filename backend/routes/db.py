@@ -23,6 +23,7 @@
 from pydantic import BaseModel
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
+from fastapi import BackgroundTasks
 from typing import List
 from backend.api import tautulli
 from backend.api import overseerr
@@ -31,6 +32,7 @@ from backend.api import tvdb
 from backend.api import server
 from backend.api import automated
 from backend.db import db
+from backend.api.jobRegister import start_job, get_jobs
 from fastapi.responses import PlainTextResponse
 
 router = APIRouter()
@@ -268,11 +270,26 @@ def populate_movies():
 
 @router.get("/link_tautulli")
 def link_tautulli():
-    return db.link_tautulli()
+    job_id = start_job(
+        "Fetching data from Tautulli...",
+        db.link_tautulli
+    )
+    return {"job_id": job_id}
 
 @router.get("/link_overseerr")
 def link_overseerr():
-    return db.link_overseerr()
+    if overseerr.validate_apikey():
+        job_id = start_job(
+            "Fetching data from Overseerr...",
+            db.link_overseerr
+        )
+        return {"job_id": job_id}
+    else:
+        return False
+
+@router.get("/jobs")
+def job_status():
+    return get_jobs()
 
 @router.post("/get_movie_poster_image")
 def get_movie_poster_image(data: APIModel):

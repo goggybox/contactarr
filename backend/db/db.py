@@ -23,6 +23,7 @@
 import sqlite3
 import time
 import os
+import threading
 from pathlib import Path
 from datetime import datetime
 from datetime import timezone
@@ -176,6 +177,15 @@ def _get_movie_from_db_from_rating_key(conn, rating_key):
         return None
     return dict(row)
 
+def _get_movie_from_db_from_tmdb_id(conn, tmdbId):
+    row = conn.execute(
+        "SELECT * FROM movies WHERE tmdb_id = ?",
+        (int(tmdbId),)
+    ).fetchone()
+    if row is None:
+        return None
+    return dict(row)
+
 def _get_movie_request_from_request_id(conn, request_id):
     row = conn.execute(
         "SELECT * FROM movie_requests WHERE request_id = ?",
@@ -198,6 +208,15 @@ def _get_show_from_db_from_rating_key(conn, rating_key):
     row = conn.execute(
         "SELECT * FROM shows WHERE rating_key = ?",
         (int(rating_key),)
+    ).fetchone()
+    if row is None:
+        return None
+    return dict(row)
+
+def _get_show_from_db_from_tmdb_id(conn, tmdb_id):
+    row = conn.execute(
+        "SELECT * FROM shows WHERE tmdb_Id = ?",
+        (int(tmdb_id),)
     ).fetchone()
     if row is None:
         return None
@@ -368,6 +387,8 @@ def get_connection():
 
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA busy_timeout = 30000;")
     return SafeConnection(conn)
 
 def link_tautulli():
@@ -387,9 +408,12 @@ def link_overseerr():
     if overseerr.validate_apikey():
         print("LINKING OVERSEERR...")
         process_overseerr_requests()
-        return True
-    print("Overseerr API key not valid, cancelling link.")
-    return False
+    else:
+        print("Overseerr API key not valid, cancelling link.")
+
+def get_overseerr_status():
+    global _overseerr_running
+    return _overseerr_running
 
 """
 TODO:
@@ -502,7 +526,13 @@ def process_movie_request(request, movies_table):
         # get the movie_name and movie_year
         with get_connection() as conn:
             with conn:
-                obtained_movie = _get_movie_from_db_from_rating_key(conn, rating_key)
+                if rating_key:
+                    # it was obtained using rating_key
+                    obtained_movie = _get_movie_from_db_from_rating_key(conn, rating_key)
+                else:
+                    # it was obtained using tmdbId
+                    obtained_movie = _get_movie_from_db_from_tmdb_id(conn, tmdbId)
+
                 movie_id = obtained_movie["movie_id"]
                 movie_name = obtained_movie["movie_name"]
                 movie_year = obtained_movie["year"]
@@ -609,7 +639,12 @@ def process_tv_request(request, shows_table):
         # get the show_name and show_year
         with get_connection() as conn:
             with conn:
-                obtained_show = _get_show_from_db_from_rating_key(conn, rating_key)
+                if rating_key:
+                    # it was obtained using rating_key
+                    obtained_show = _get_show_from_db_from_rating_key(conn, rating_key)
+                else:
+                    # it was obtained using tmdbId
+                    obtained_show = _get_show_from_db_from_tmdb_id(conn, tmdbId)
                 show_id = obtained_show["show_id"]
                 show_name = obtained_show["show_name"]
                 show_year = obtained_show["year"]
