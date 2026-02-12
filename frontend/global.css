@@ -87,4 +87,10 @@ html, body {
     --primary-unsubscribed-user-colour: rgb(255, 69, 69);
     --secondary-unsubscribed-user-colour: rgb(234, 60, 60);
     --tertiary-unsubscribed-user-colour: rgb(207, 51, 51);
+
+    /* overseerr request colours */
+    --overseerr-approved-colour: #86e155;
+    --overseerr-pending-colour: #e1ae55;
+    --overseerr-declined-colour: #ff4848;
+    --overseerr-unknown-colour: #aa48ff;
 }

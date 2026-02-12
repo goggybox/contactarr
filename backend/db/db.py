@@ -437,7 +437,7 @@ def process_overseerr_requests():
 
 def extract_year_from_yyyy_dd_mm(datestr):
     # extract just year from 2026-02-08 format
-    return datetime.fromisoformat(datestr).year
+    return datetime.fromisoformat(str(datestr)).year
 
 def process_movie_request(request, movies_table):
 
@@ -450,10 +450,15 @@ def process_movie_request(request, movies_table):
     tmdb_movie_details = tmdb.get_movie(tmdbId) # get information about the movie from TMDB.
     
     # get movie from existing table
-    if not rating_key:
-        return
-
-    movie_in_table = int(rating_key) in movies_table
+    if rating_key:
+        # search for show using rating key
+        movie_in_table = int(rating_key) in movies_table
+    else:
+        with get_connection() as conn:
+            with conn:
+                # search for show using tmdbID
+                movies_by_tmdb = _get_table_indexed(conn, "movies", "tmdb_id")
+                movie_in_table = int(tmdbId) in movies_by_tmdb
 
     if not movie_in_table:
         # the move is not in the movies table.
@@ -491,9 +496,6 @@ def process_movie_request(request, movies_table):
                         [movie_id, tmdb_movie_details["id"]],
                         "movies"
                     )
-                else:
-                    # wasn't already in table, we added it.
-                    print(f"Added movie {tmdb_movie_details["title"]} ({extract_year_from_yyyy_dd_mm(tmdb_movie_details["release_date"])}) to movies table. (MOVIE ID {movie_id}) (RATING KEY {rating_key} {type(rating_key)})")
 
     else:
         # there is a movie in the movies table with the rating key overseerr expected.
@@ -552,10 +554,16 @@ def process_tv_request(request, shows_table):
     show_year = None
     tmdb_show_details = tmdb.get_show(tmdbId)
 
-    if not rating_key:
-        return
-
-    show_in_table = int(rating_key) in shows_table
+    
+    if rating_key:
+        # search for show using rating key
+        show_in_table = int(rating_key) in shows_table
+    else:
+        with get_connection() as conn:
+            with conn:
+                # search for show using tmdbID
+                shows_by_tmdb = _get_table_indexed(conn, "shows", "tmdb_id")
+                show_in_table = int(tmdbId) in shows_by_tmdb
 
     if not show_in_table:
         # the show is not in the shows table.
@@ -622,23 +630,20 @@ def process_tv_request(request, shows_table):
             # if every season is already in seasons table, nothing will happen. 
             seasons = tmdb_show_details["seasons"]
             for season in seasons:
+                data = {
+                    "show_id": show_id,
+                    "season_num": season["season_number"],
+                    "episode_count": season["episode_count"],
+                }
+
+                if season["air_date"] is not None:
+                    data["year"] = extract_year_from_yyyy_dd_mm(season["air_date"])
+
                 season_id = _add_to_table(conn, {
                     "table": "seasons",
-                    "data": {
-                        "show_id": show_id,
-                        "season_num": season["season_number"],
-                        "episode_count": season["episode_count"],
-                        "year": extract_year_from_yyyy_dd_mm(season["air_date"]),
-                    },
+                    "data": data,
                     "return": "season_id"
                 })
-                if season_id:
-                    print(f"ADDED SEASON {season["season_number"]} FOR show {show_name}")
-                else:
-                    print(f"(!!) Tried to add season {season["season_number"]} for show {show_name}")
-                    print(f"      show_id:{show_id}, season_num:{season["season_number"]}, episode_count:{season["episode_count"]}, year:{extract_year_from_yyyy_dd_mm(season["air_date"])}")
-
-
 
             user_plex_id = request["requestedBy"].get("plexId")
             if not user_plex_id:
@@ -681,31 +686,40 @@ def get_user_requests(user_id):
     query = """
         SELECT
             'movie' AS type,
-            request_id,
-            movie_id AS movie_id,
+            mr.request_id,
+            mr.movie_id AS movie_id,
             NULL AS show_id,
             NULL AS season_id,
-            requested_at,
-            status,
-            updated_at,
-            overseerr_request_id
-        FROM movie_requests
-        WHERE user_id = ?
+            m.movie_name AS name,
+            m.year AS year,
+            NULL AS season_number,
+            mr.requested_at,
+            mr.status,
+            mr.updated_at,
+            mr.overseerr_request_id
+        FROM movie_requests AS mr
+        JOIN movies AS m ON mr.movie_id = m.movie_id
+        WHERE mr.user_id = ?
 
         UNION ALL
 
         SELECT
             'show' AS type,
-            request_id,
+            sr.request_id,
             NULL AS movie_id,
-            show_id AS show_id,
-            season_id AS season_id,
-            requested_at,
-            status,
-            updated_at,
-            overseerr_request_id
-        FROM season_requests
-        WHERE user_id = ?
+            sr.show_id AS show_id,
+            sr.season_id AS season_id,
+            s.show_name AS name,
+            s.year AS year,
+            se.season_num AS season_number,
+            sr.requested_at,
+            sr.status,
+            sr.updated_at,
+            sr.overseerr_request_id
+        FROM season_requests AS sr
+        JOIN shows AS s ON sr.show_id = s.show_id
+        JOIN seasons AS se ON sr.season_id = se.season_id
+        WHERE sr.user_id = ?
 
         ORDER BY requested_at DESC
 

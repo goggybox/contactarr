@@ -45,9 +45,21 @@ const DEFAULTS = {
 
 export let selecting_users = false;
 export let selected_users = [];
+let selected_requests = [];
 let users;
 let selected_email = EMAIL_TYPES.SERVER;
 let systemUpdatesUnsubscribeList = [];
+
+function getUserByUsername(username) {
+    return users.find(u => u.username === username) || null;
+}
+
+function cr(type, clss, id) {
+    const elem = document.createElement(type);
+    if (clss) { elem.classList.add(clss); }
+    if (id) { elem.id = id; }
+    return elem;
+}
 
 // -------------------- STORAGE MANAGEMENT --------------------
 
@@ -131,7 +143,6 @@ function loadEmailContent(emailType) {
     const content = localStorage.getItem(getStorageKey(emailType, "HTML"));
     const footer = localStorage.getItem(getStorageKey(emailType, "Footer"));
     const defaults = DEFAULTS[emailType];
-    console.log(content);
 
     return {
         content: (content ?? "") === "" ? defaults.content : content,
@@ -140,7 +151,6 @@ function loadEmailContent(emailType) {
 }
 
 function saveEmailContent(emailType, value) {
-    console.log("wat");
     localStorage.setItem(getStorageKey(emailType, "HTML"), value);
 }
 
@@ -241,6 +251,9 @@ function displayUsers(users) {
     });
 
     // TODO: overseerr-select-users-button event clicker
+    document.getElementById("overseerr-select-users-button").addEventListener("click", function () {
+        clickSelectUsersButton(this, EMAIL_TYPES.OVERSEERR);
+    });
 
     document.getElementById("select-subscribed-users-button").addEventListener("click", selectSubscribedUsers);
 
@@ -252,6 +265,14 @@ function displayUsers(users) {
 // -------------------- email display components --------------------
 
 function selectEmailType(emailType) {
+    // first, for current email, deselect all selected_users, and close selection if open.
+    clearSelectedUsers();
+    let button;
+    if (emailType == EMAIL_TYPES.SERVER) { button = document.getElementById("overseerr-select-users-button"); } // switching to server, so currently overseerr.
+    else { button = document.getElementById("server-select-users-button"); } // vice versa
+
+    if (selecting_users) { clickSelectUsersButton(button, emailType); }
+
     selected_email = emailType;
     updateEmailSelectorUI(emailType);
     displayEmail(emailType);
@@ -340,13 +361,15 @@ function displayTautulliError() {
  * @param {*} emailType 
  */
 function clickSelectUsersButton(button, emailType) {
+    // if clicking the select users button, either way, we need to clear selected_users
+    clearSelectedUsers();
 
     if (emailType === EMAIL_TYPES.OVERSEERR) {
         // call custom handler for overseerr
-        handleOverseerrSelection(button, users, selected_users);
+        handleOverseerrSelection(button);
     }
     else if (emailType === EMAIL_TYPES.SERVER) {
-        handleServerSelection(button, users, selected_users);
+        handleServerSelection(button);
     }
 }
 
@@ -357,8 +380,15 @@ function clickSelectUsersButton(button, emailType) {
  * @param {*} allUsers 
  * @param {*} currentlySelected 
  */
-function handleOverseerrSelection(button, allUsers, currentlySelected) {
-    // TODO: implement function
+function handleOverseerrSelection(button) {
+    
+    selecting_users = ! selecting_users;
+    button.classList.toggle("selecting", selecting_users);
+    button.textContent = selecting_users ? "Cancel Selection" : "Select User";
+
+    document.querySelectorAll(".user-container-checkbox").forEach(cb => {
+        cb.classList.toggle("hidden", !selecting_users);
+    });
 }
 
 /**
@@ -377,6 +407,8 @@ function handleServerSelection(button) {
     });
     
     document.getElementById("select-users-buttons").classList.toggle("hidden", !selecting_users);
+
+    
     
     // show warning about unsubscribed users, only if there are any.
     if (systemUpdatesUnsubscribeList.length > 0) {
@@ -395,17 +427,180 @@ function handleServerSelection(button) {
     document.getElementById("send-email-button").classList.toggle("hidden", !selecting_users);
 }
 
-function clickUserCheckbox(checkbox) {
-    const username = checkbox.textContent;
-    
-    if (checkbox.checked) {
-        if (!selected_users.includes(username)) selected_users.push(username);
+/**
+ * user checkbox clicked behaviour
+ * @param {*} checkbox 
+ */
+async function clickUserCheckbox(checkbox) {
+
+    if (selected_email === EMAIL_TYPES.SERVER) {
+        // SERVER EMAIL
+        const username = checkbox.textContent;
+        
+        if (checkbox.checked) {
+            if (!selected_users.includes(getUserByUsername(username))) { selected_users.push(getUserByUsername(username)); }
+        } else {
+            const index = selected_users.indexOf(getUserByUsername(username));
+            if (index > -1) selected_users.splice(index, 1);
+        }
+
+        updateSelectUsersButtons();
     } else {
-        const index = selected_users.indexOf(username);
-        if (index > -1) selected_users.splice(index, 1);
+        // OVERSEERR EMAIL
+        const username = checkbox.textContent;
+        if (checkbox.checked) {
+            const user = getUserByUsername(username)
+            if (!selected_users.includes(user)) {
+                clearSelectedUsersExcept(checkbox);
+                selected_users.push(user);
+
+                // get user's requests
+                const res = await fetch ('/backend/overseerr/get_user_requests', {
+                    method: 'POST',
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({key: String(user["user_id"])}) 
+                })
+                selected_requests = await res.json();
+                console.log(selected_requests);
+
+                document.getElementById("overseerr-userInput").textContent = username;
+                showRequestSelection();
+            }
+        } else {
+            const index = selected_users.indexOf(getUserByUsername(username));
+            if (index > -1) selected_users.splice(index, 1);
+            document.getElementById("overseerr-userInput").textContent = "";
+            hideRequestSelection();
+        }
+
     }
-    
-    updateSelectUsersButtons();
+}
+
+function showRequestSelection() {
+    document.getElementById("overseerr-request-container").classList.remove("hidden");
+}
+
+function hideRequestSelection() {
+    document.getElementById("overseerr-request-container").classList.add("hidden");
+}
+
+function clickRequestDropdown() {
+    if (document.getElementById("overseerr-request-dropdown").classList.contains("hidden")) {
+        showRequestDropdown();
+    } else {
+        hideRequestDropdown();
+    }
+}
+
+function showRequestDropdown() { 
+    // clear current dropdown
+    document.getElementById("overseerr-request-dropdown").innerHTML = "";
+
+    addRequests();
+    document.getElementById("overseerr-request-dropdown").classList.remove("hidden");
+    document.getElementById("overseerr-requestInput").classList.add("bottom-shadow");
+    const el = document.getElementById("content-wrapper");
+    el.scrollTop = el.scrollHeight - el.clientHeight;
+}
+
+function formatUnix(timestamp) {
+    timestamp = parseInt(timestamp);
+    if (timestamp.toString().length === 10) {
+        timestamp *= 1000;
+    }
+
+    const date = new Date(timestamp);
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+
+    return `${day}/${month} at ${hours}:${minutes}`;
+}
+
+function addRequests() {
+
+    for (const request of selected_requests) {
+        const status = request["status"];
+        const status_colours = ["var(--overseerr-pending-colour)", "var(--overseerr-approved-colour)", "var(--overseerr-declined-colour)"];
+        const status_summaries = ["PENDING", "APPROVED", "DECLINED"];
+
+        // request list
+        const list = document.getElementById("overseerr-request-dropdown");
+
+        // request object
+        const container = cr("div", null, "overseerr-request");
+        list.appendChild(container);
+
+        // request badge
+        const badge = cr("div", null, "overseerr-request-badge");
+        badge.style.background = status_colours[status-1];
+        container.appendChild(badge);
+
+        // request text container
+        const text_container = cr("div", null, "overseerr-request-text");
+        container.appendChild(text_container);
+
+        // media title container
+        const title_container = cr("div", null, "media-title-container");
+        text_container.appendChild(title_container);
+        // name
+        const name = cr("p", null, "media-title-name");
+        name.textContent = request["name"];
+        title_container.appendChild(name);
+        // year
+        const year = cr("p", null, "media-title-year");
+        year.textContent = `(${request["year"]})`;
+        title_container.appendChild(year);
+
+        // overseerr-request objects for each request, added to overseerr-request-dropdown
+        // <div id="overseerr-request">
+        //     <div id="overseerr-request-badge">
+        //     </div>
+        //     <div id="overseerr-request-text">
+                // <div id="media-title-container">
+                //     <p id="media-title-name">Movie TitleTitle</p>
+                //     <p id="media-title-year">(2023)</p>
+                // </div>
+                // <div id="request-info-container">
+                //     <p id="requested-at">MOVIE | Requested 12/02 at 09:30</p>
+                // </div>
+        //     </div>
+        //     <div id="request-status">
+        //     <p id="status-summary">DECLINED</p>
+        //     <p id="status-detail">12/02 at 11:00</p>
+        //     </div>
+        // </div>
+
+        // info container
+        const info_container = cr("div", null, "request-info-container");
+        text_container.appendChild(info_container);
+
+        // requested-at
+        const requested_at = cr("p", null, "requested-at");
+        requested_at.textContent = `${request["type"]==="movie" ? "MOVIE" : `S${request["season_number"]}`} | Req: ${formatUnix(request["requested_at"])}`;
+        text_container.appendChild(requested_at);
+
+        // request-status
+        const request_status = cr("div", null, "request-status");
+        // summary
+        const summary = cr("p", null, "status-summary");
+        summary.textContent = status_summaries[status-1];
+        summary.style.color = status_colours[status-1];
+        request_status.appendChild(summary);
+        // detail
+        const detail = cr("p", null, "status-detail");
+        detail.textContent = formatUnix(request["updated_at"]);
+        request_status.appendChild(detail);
+        container.appendChild(request_status);
+    }
+
+
+}
+
+function hideRequestDropdown() {
+    document.getElementById("overseerr-request-dropdown").classList.add("hidden");
+    document.getElementById("overseerr-requestInput").classList.remove("bottom-shadow");
 }
 
 function updateSelectUsersButtons() {
@@ -429,6 +624,29 @@ function updateSelectUsersButtons() {
     document.getElementById("send-email-button").classList.toggle("disabled", !anySelected);
 }
 
+function clearSelectedUsers() {
+    // function used to deselect all users
+    selected_users = [];
+    document.querySelectorAll(".user-container-checkbox").forEach(cb => {
+        if (cb.checked) { cb.checked = false; }
+    });
+    updateSelectUsersButtons();
+
+    if (selected_email === EMAIL_TYPES.OVERSEERR) {
+        document.getElementById("overseerr-userInput").textContent = "";
+        hideRequestSelection();
+    }
+}
+
+function clearSelectedUsersExcept(checkbox) {
+    document.querySelectorAll(".user-container-checkbox").forEach(cb => {
+        if (cb !== checkbox) {
+            selected_users.splice(selected_users.indexOf(getUserByUsername((cb.textContent))));
+            cb.checked = false;
+        }
+    })
+}
+
 function selectSubscribedUsers() {
     // if all subscribed users are already selected, don't register a click
     if (document.getElementById("select-subscribed-users-button").classList.contains("selected")) { return; }
@@ -443,7 +661,7 @@ function selectSubscribedUsers() {
         } else {
             cb.checked = false;
             const username = cb.textContent;
-            const idx = selected_users.indexOf(username);
+            const idx = selected_users.indexOf(getUserByUsername(username));
             if (idx > -1) { selected_users.splice(idx, 1); }
         }
     });
@@ -485,7 +703,7 @@ async function sendOverseerrEmail() {
 async function sendServerEmail() {
 
     // get selected users' email address
-    const selectedUserData = users.filter(u => selected_users.includes(u.username));
+    const selectedUserData = users.filter(u => selected_users.includes(getUserByUsername(u.username)));
     const recipientEmails = selectedUserData.map(u => u.email).filter(e => e && e !== "-");
 
     if (recipientEmails.length === 0) {
@@ -555,7 +773,7 @@ function createProgressContainer(total) {
         <p class="email-progress-text">Sending 0 of ${total}...</p>
         <p class="email-progress-status"></p>
     `;
-    return container;
+    return progressContainer;
 }
 
 function createProgressHandlers(container, sendBtn) {
@@ -578,7 +796,7 @@ function createProgressHandlers(container, sendBtn) {
             progressFill.style.width = "100%";
             progressText.textContent = `Complete! ${data.successful} sent, ${data.failed} failed`;
             setTimeout(() => {
-                progressContainer.remove();
+                container.remove();
                 if (data.failed === 0) {
                     console.log(`Email sent successfully to ${data.successful} recipient(s)`);
                     deselectAllUsers();
@@ -590,7 +808,7 @@ function createProgressHandlers(container, sendBtn) {
             }, 1000);
         },
         onError: (message) => {
-            progressContainer.remove();
+            container.remove();
             console.log(`Failed: ${message}`);
             sendBtn.classList.remove("disabled");
         }
@@ -622,4 +840,7 @@ window.onload = async function() {
     // add event listener to server and overseerr email buttons
     document.getElementById("server-selector").addEventListener("click", () => selectEmailType(EMAIL_TYPES.SERVER));
     document.getElementById("overseerr-selector").addEventListener("click", () => selectEmailType(EMAIL_TYPES.OVERSEERR));
+
+    // add event listener to overseerr Select Request button
+    document.getElementById("overseerr-select-requests-button").addEventListener("click", () => clickRequestDropdown());
 };
