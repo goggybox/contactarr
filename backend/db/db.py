@@ -135,132 +135,58 @@ def _get_table_indexed(conn, name, key_field):
     rows = conn.execute(f"SELECT * FROM {name}").fetchall()
     return {row[key_field]: dict(row) for row in rows}
 
-def _get_user_id_from_username(conn, username):
-    row = conn.execute(
-        "SELECT user_id FROM users WHERE username = ?",
-        (username,)
-    ).fetchone()
-    if row is None:
-        return None
-    return row["user_id"]
-
-def _get_movie_id_from_rating_key(conn, rating_key):
+def get_field_from_table(conn, table, target_column, filters: dict):
     """
-    get a movie's id from its rating_key
+    fetch the value of a given column (target_column) with a WHERE
+    clause made up of filters.
+    e.g.: get_field_from_table(conn, "users", "user_id", {"username": username})
     """
-    row = conn.execute(
-        "SELECT movie_id FROM movies WHERE rating_key = ? LIMIT 1",
-        (rating_key,)
-    ).fetchone()
-    return row["movie_id"] if row else None
+    if not filters:
+        raise ValueError("get_field_from_table called but filters not given.")
+    
+    where = " AND ".join(f"{col} = ?" for col in filters.keys())
+    values = tuple(filters.values())
+    
+    query = f"""
+        SELECT {target_column}
+        FROM {table}
+        WHERE {where}
+        LIMIT 1
+    """
 
-def _get_movie_from_name_year(conn, movie_name, year):
-    row = conn.execute(
-        "SELECT movie_id, rating_key FROM movies WHERE movie_name = ? AND year = ?",
-        (movie_name, year,)
-    ).fetchone()
+    row = conn.execute(query, values).fetchone()
+    return row[target_column] if row else None
+
+def get_row_from_table(conn, table, filters: dict):
+    """
+    same as get_field_from_table but returns the entire row.
+    """
+    if not filters:
+        raise ValueError("get_row_from_table called but filters not given.")
+
+    where = " AND ".join(f"{con} = ?" for col in filters.keys())
+    values = tuple(filters.values())
+
+    query = f"""
+        SELECT *
+        FROM {table}
+        WHERE {where}
+        LIMIT 1
+    """
+
+    row = conn.execute(query, values).fetchone()
     return dict(row) if row else None
 
-def _get_show_from_name_year(conn, show_name, year):
-    row = conn.execute(
-        "SELECT show_id, rating_key FROM shows WHERE show_name = ? AND year = ?",
-        (show_name, year,)
-    ).fetchone()
-    return dict(row) if row else None
-
-def _get_movie_from_db_from_rating_key(conn, rating_key):
-    row = conn.execute(
-        "SELECT * FROM movies WHERE rating_key = ?",
-        (int(rating_key),)
-    ).fetchone()
-    if row is None:
-        return None
-    return dict(row)
-
-def _get_movie_from_db_from_tmdb_id(conn, tmdbId):
-    row = conn.execute(
-        "SELECT * FROM movies WHERE tmdb_id = ?",
-        (int(tmdbId),)
-    ).fetchone()
-    if row is None:
-        return None
-    return dict(row)
-
-def _get_movie_request_from_request_id(conn, request_id):
-    row = conn.execute(
-        "SELECT * FROM movie_requests WHERE request_id = ?",
-        (int(request_id),)
-    ).fetchone()
-    if row is None:
-        return None
-    return dict(row)
-
-def _get_show_request_from_request_id(conn, request_id):
-    row = conn.execute(
-        "SELECT * FROM show_requests WHERE request_id = ?",
-        (int(request_id),)
-    ).fetchone()
-    if row is None:
-        return None
-    return dict(row)
-
-def _get_show_from_db_from_rating_key(conn, rating_key):
-    row = conn.execute(
-        "SELECT * FROM shows WHERE rating_key = ?",
-        (int(rating_key),)
-    ).fetchone()
-    if row is None:
-        return None
-    return dict(row)
-
-def _get_show_from_db_from_tmdb_id(conn, tmdb_id):
-    row = conn.execute(
-        "SELECT * FROM shows WHERE tmdb_Id = ?",
-        (int(tmdb_id),)
-    ).fetchone()
-    if row is None:
-        return None
-    return dict(row)
-
-def _get_show_id_from_rating_key(conn, rating_key):
+def set_show_tmdb_id(conn, show_name, tmdb_id):
     """
-    get a show's id from its rating_key
-    """
-    row = conn.execute(
-        "SELECT show_id FROM shows WHERE rating_key = ? LIMIT 1",
-        (rating_key,)
-    ).fetchone()
-    return row["show_id"] if row else None
 
-def _get_season_id_from_rating_key(conn, rating_key):
     """
-    get a season's id from its rating_key
-    """
-    row = conn.execute (
-        "SELECT season_id FROM seasons WHERE rating_key = ? LIMIT 1",
-        (rating_key,)
-    ).fetchone()
-    return row["season_id"] if row else None
-
-def _get_season_id_from_show_id_season_num(conn, show_id, season_num):
-    """
-    get a season's id from its show's ID and the season number
-    """
-    row = conn.execute (
-        "SELECT season_id FROM seasons WHERE show_id = ? AND season_num = ? LIMIT 1",
-        (show_id, season_num,)
-    ).fetchone()
-    return row["season_id"] if row else None
-
-def _get_episode_id_from_rating_key(conn, rating_key):
-    """
-    get an episode's id from its rating_key
-    """
-    row = conn.execute (
-        "SELECT episode_id FROM episodes WHERE rating_key = ? LIMIT 1",
-        (rating_key,)
-    ).fetchone()
-    return row["episode_id"] if row else None
+    result = conn.execute(
+        "UPDATE shows SET tmdb_id = ? WHERE show_name = ?",
+        (tmdb_id, show_name)
+    )
+    conn.commit()
+    return result.rowcount
 
 def _attrs_vals_in_table(conn, spec):
     """
@@ -510,7 +436,7 @@ def process_movie_request(request, movies_table):
                 #   - it can be the case that overseerr has the incorrect rating_key.
                 if not movie_id:
                     # we now need to get the movie_id and rating_key of the entry in the movies table.
-                    obtained_movie = _get_movie_from_name_year(conn, movie_name, movie_year)
+                    obtained_movie = get_row_from_table(conn, "movies", {"movie_name": movie_name, "year": movie_year})
                     movie_id = obtained_movie["movie_id"]
                     rating_key = obtained_movie["rating_key"]
 
@@ -528,10 +454,10 @@ def process_movie_request(request, movies_table):
             with conn:
                 if rating_key:
                     # it was obtained using rating_key
-                    obtained_movie = _get_movie_from_db_from_rating_key(conn, rating_key)
+                    obtained_movie = get_row_from_table(conn, "movies", {"rating_key": rating_key})
                 else:
                     # it was obtained using tmdbId
-                    obtained_movie = _get_movie_from_db_from_tmdb_id(conn, tmdbId)
+                    obtained_movie = get_row_from_table(conn, "movies", {"tmdb_id", tmdbId})
 
                 movie_id = obtained_movie["movie_id"]
                 movie_name = obtained_movie["movie_name"]
@@ -556,7 +482,7 @@ def process_movie_request(request, movies_table):
                 #     request will be assigned to them.
                 username = request["requestedBy"]["username"]
                 if (username):
-                    user_plex_id = _get_user_id_from_username(conn, username)
+                    user_plex_id = get_field_from_table(conn, "users", "user_id", {"username": username})
 
             request_id = _add_to_table(conn, {
                 "table": "movie_requests",
@@ -621,7 +547,7 @@ def process_tv_request(request, shows_table):
                 #   - it can be the case that overseerr has the incorrect rating_key.
                 if not show_id:
                     # we now need to get the movie_id and rating_key of the entry in the movies table.
-                    obtained_show = _get_show_from_name_year(conn, show_name, show_year)
+                    obtained_show = get_row_from_table(conn, "shows", {"show_name": show_name, "year": show_year})
                     show_id = obtained_show["show_id"]
                     rating_key = obtained_show["rating_key"]
 
@@ -641,10 +567,10 @@ def process_tv_request(request, shows_table):
             with conn:
                 if rating_key:
                     # it was obtained using rating_key
-                    obtained_show = _get_show_from_db_from_rating_key(conn, rating_key)
+                    obtained_show = get_row_from_table(conn, "shows", {"rating_key": rating_key})
                 else:
                     # it was obtained using tmdbId
-                    obtained_show = _get_show_from_db_from_tmdb_id(conn, tmdbId)
+                    obtained_show = get_row_from_table(conn, "shows", {"tmdb_id": tmdbId})
                 show_id = obtained_show["show_id"]
                 show_name = obtained_show["show_name"]
                 show_year = obtained_show["year"]
@@ -688,13 +614,17 @@ def process_tv_request(request, shows_table):
                 #     request will be assigned to them.
                 username = request["requestedBy"]["username"]
                 if (username):
-                    user_plex_id = _get_user_id_from_username(conn, username)
+                    user_plex_id = get_field_from_table(conn, "users", "user_id", {"username": username})
 
             print(len(request["seasons"]))
             for season in request["seasons"]:
                 # for each requested season, get the season id for the seasonNumber of the request, add an entry to season_requests.
                 season_num = season["seasonNumber"]
-                season_id = _get_season_id_from_show_id_season_num(conn, show_id, season_num)
+
+                # get the season_id from the "seasons" table from the entry with the
+                # given show_id and season_num combination
+                season_id = get_field_from_table(conn, "seasons", "season_id" {"show_id": show_id, "season_num": season_num})
+                
                 request_id = _add_to_table(conn, {
                     "table": "season_requests",
                     "data": {
@@ -1166,7 +1096,7 @@ def populate_movies():
                             })
 
                         # at the same time, we want to record the user's watch of the movie in movie_watches.
-                        tmp = _get_movie_from_name_year(conn, movie["title"], movie["year"])
+                        tmp = get_row_from_table(conn, "movies", {"movie_name": movie["title"], "year": movie["year"]})
                         movie_id = tmp["movie_id"]
                         user_id = user["user_id"]
                         started = movie["started"]

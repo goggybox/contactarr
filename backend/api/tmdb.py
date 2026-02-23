@@ -69,6 +69,13 @@ def get_show(tmdbId):
     # get details about a show from tmdb
     return getFromAPI(f"tv/{tmdbId}")
 
+def get_show_tmdb_id(searchQuery):
+    # get tmdb ID for a show from its title
+    searchQuery = searchQuery.replace(' ', '+')
+    tmdbId = getFromAPI(f"search/tv?query={searchQuery}")
+    print(f"Searched for '{searchQuery}', got ID {tmdbId}")
+    return tmdbId
+
 def get_poster_image(tmdb_poster_url: str) -> bytes | None:
     if not tmdb_poster_url:
         return None

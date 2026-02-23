@@ -449,7 +449,7 @@ async function clickUserCheckbox(checkbox) {
         // OVERSEERR EMAIL
         const username = checkbox.textContent;
         if (checkbox.checked) {
-            const user = getUserByUsername(username)
+            const user = getUserByUsername(username);
             if (!selected_users.includes(user)) {
                 clearSelectedUsersExcept(checkbox);
                 selected_users.push(user);
@@ -467,7 +467,8 @@ async function clickUserCheckbox(checkbox) {
                 showRequestSelection();
             }
         } else {
-            const index = selected_users.indexOf(getUserByUsername(username));
+            const user = getUserByUsername(username);
+            const index = selected_users.indexOf(user);
             if (index > -1) selected_users.splice(index, 1);
             document.getElementById("overseerr-userInput").textContent = "";
             hideRequestSelection();
@@ -833,6 +834,16 @@ window.onload = async function() {
         console.error("Dashboard initialisation error: ", error);
         displayTautulliError();
     }
+
+    await this.fetch("/backend/tmdb/get_show_tmdb_id", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            key: "Designated Survivor"
+        })
+    });
 
     // add event listener to send email button
     document.getElementById("send-email-button").addEventListener("click", () => sendEmail(selected_email));

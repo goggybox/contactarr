@@ -29,6 +29,7 @@ from backend.api import tautulli
 from backend.api import overseerr
 from backend.api import smtp
 from backend.api import tvdb
+from backend.api import tmdb
 from backend.api import server
 from backend.api import automated
 from backend.db import db
@@ -225,6 +226,14 @@ def tvdb_validate_token():
 @router.get("/tvdb/get_new_token")
 def tvdb_get_new_token():
     return tvdb.get_new_token()
+
+# ---------------------------------------- #
+#                   TMDB                   #
+# ---------------------------------------- #
+
+@router.post("/tmdb/get_show_tmdb_id")
+def tmdb_get_show_tmdb_id(data: APIModel):
+    return tmdb.get_show_tmdb_id(data.key)
 
 # ---------------------------------------- #
 #             AUTOMATED EMAILS             #
