@@ -835,13 +835,13 @@ window.onload = async function() {
         displayTautulliError();
     }
 
-    await this.fetch("/backend/tmdb/get_show_tmdb_id", {
+    await this.fetch("/backend/get_all_shows_watched_by_user", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
         },
         body: JSON.stringify({
-            key: "Designated Survivor"
+            key: "31427928"
         })
     });
 

@@ -22,7 +22,7 @@
 
 import os
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from dotenv import load_dotenv
 from backend.api.cache import apiGet, clearCache
 from backend.api import config
@@ -93,5 +93,88 @@ def get_new_token():
     
     return None
 
-# def get_tvdb_status():
+def get_show_tvdb_id(searchQuery, year = None):
+    result = getFromAPI(f"search?q={searchQuery}&year={year}")
+    if (not (result and result.get("data") and len(result.get("data")) > 0 and result["data"][0].get("tvdb_id"))):
+        return
+    tvdbId = result["data"][0]["tvdb_id"]
+    return tvdbId
+
+def get_recent_episodes(tvdb_id):
+    """
+    will return a list of episodes that have been released in the last 7 days for the given
+    show.
+
+    episodes have format:
+    {
+        "id": 6770292,
+        "seriesId": 350665,
+        "name": "Pilot",
+        "aired": "2018-10-16",
+        "runtime": 45,
+        "nameTranslations": [
+            "deu",
+            ...
+        ],
+        "overview": "Starting over isn’t easy, especially for small-town guy John Nolan who, after a life-altering incident, is pursuing his dream of being a police officer.",
+        "overviewTranslations": [
+            "deu",
+            ...
+        ],
+        "image": "https://artworks.thetvdb.com/banners/episodes/350665/6770292.jpg",
+        "imageType": 11,
+        "isMovie": 0,
+        "seasons": null,
+        "numbers": 1,
+        "absoluteNumber": 1,
+        "seasonNumber": 1,
+        "lastUpdated": "2025-08-30 07:35:20",
+        "finaleType": null,
+        "year": "2018"
+    },
+    """
+    endpoint = f"series/{tvdb_id}/episodes/default"
     
+    result = getFromAPI(endpoint) # just gets cached value (if it exists)
+    if not result or not result.get("data"):
+        return []
+
+    series = result["data"].get("series") or {}
+    episodes = result["data"].get("episodes") or []
+    next_aired_str = series.get("nextAired") # is a string in format "2026-03-03"
+
+    if next_aired_str:
+        try:
+            next_aired_date = datetime.strptime(next_aired_str, "%Y-%m-%d").date()
+
+            if next_aired_date <= date.today():
+                # the next episode has already aired, so we should now refresh
+                # the cached entry to get the NEXT episode.
+                result = getFromAPI(endpoint, forceFresh=True)
+
+                if not result or not result.get("data"):
+                    return []
+
+                series = result["data"].get("series") or {}
+                episodes = result["data"].get("episodes") or []
+
+        except ValueError:
+            pass
+    
+    # get and return every episode from the last 7 days
+    seven_days_ago = date.today() - timedelta(days=7)
+    recent = []
+
+    for ep in episodes:
+        aired_str = ep.get("aired")
+        if not aired_str:
+            continue
+
+        try:
+            aired_date = datetime.strptime(aired_str.strip(), "%Y-%m-%d").date()
+            if seven_days_ago <= aired_date <= date.today():
+                recent.append(ep)
+        except ValueError:
+            continue
+    
+    return recent

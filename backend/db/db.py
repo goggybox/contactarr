@@ -25,12 +25,13 @@ import time
 import os
 import threading
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, date, timedelta
 from datetime import timezone
 from backend.api import tautulli
 from backend.api import overseerr
 from backend.api import config
 from backend.api import tmdb
+from backend.api import tvdb
 
 DB_PATH = Path(__file__).parent / "contactarr.db"
 POSTER_CACHE_DIR = ".image_cache/posters"
@@ -135,27 +136,89 @@ def _get_table_indexed(conn, name, key_field):
     rows = conn.execute(f"SELECT * FROM {name}").fetchall()
     return {row[key_field]: dict(row) for row in rows}
 
-def get_field_from_table(conn, table, target_column, filters: dict):
+
+def get_fields_from_table(conn, spec: dict):
     """
-    fetch the value of a given column (target_column) with a WHERE
-    clause made up of filters.
-    e.g.: get_field_from_table(conn, "users", "user_id", {"username": username})
+    get one or more attributes of a row in a given table
+    expected:
+    {
+        "table": "users",
+        "get": ["user_id", "friendly_name"], OR "user_id" if just one item
+        "where": {"username": "xxx"}
+    }
+
+    IF "get" IS NOT GIVEN, it will default to getting *.
+
+    returns either a value or a dict of values
     """
-    if not filters:
-        raise ValueError("get_field_from_table called but filters not given.")
-    
+
+    table = spec.get("table")
+    columns = spec.get("get")
+    filters = spec.get("where")
+
+    if not table or not filters:
+        raise ValueError("Missing expected argument in get_fields_from_table() call")
+
+    if not columns:
+        # getting all fields
+        select = "*"
+        single_column = False
+    elif isinstance(columns, str):
+        # just getting one field
+        select = columns
+        single_column = True
+    elif isinstance(columns, list):
+        if len(columns) == 1:
+            # just getting one field
+            select = columns[0]
+            single_column = True
+        else:
+            select = ", ".join(columns)
+            single_column = False
+    else:
+        raise ValueError("'get' argument was invalid in get_fields_from_table() call")
+
     where = " AND ".join(f"{col} = ?" for col in filters.keys())
     values = tuple(filters.values())
-    
+
     query = f"""
-        SELECT {target_column}
+        SELECT {select}
         FROM {table}
         WHERE {where}
         LIMIT 1
     """
 
     row = conn.execute(query, values).fetchone()
-    return row[target_column] if row else None
+    
+    if not row:
+        return None
+    if single_column:
+        return row[select]
+    return dict(row)
+
+def set_fields_in_table(conn, table, update_values: dict, filters: dict):
+    """
+    update one or more fields in `table`
+    set_fields_in_table(conn, "users", {"username": "John Doe"}, {"user_id": 1234})
+
+    returns the number of rows changed
+    """
+    if not update_values:
+        raise ValueError("set_fields_in_table called but update_values not given.")
+    if not filters:
+        raise ValueError("set_fields_in_table called but filters not given.")
+
+    set_clause = ", ".join(f"{col} = ?" for col in update_values.keys())
+    where_clause = " AND ".join(f"{col} = ?" for col in filters.keys())
+
+    query = f"""
+        UPDATE {table}
+        SET {set_clause}
+        WHERE {where_clause}
+    """
+
+    result = conn.execute(query, values)
+    return result.rowcount
 
 def get_row_from_table(conn, table, filters: dict):
     """
@@ -164,7 +227,7 @@ def get_row_from_table(conn, table, filters: dict):
     if not filters:
         raise ValueError("get_row_from_table called but filters not given.")
 
-    where = " AND ".join(f"{con} = ?" for col in filters.keys())
+    where = " AND ".join(f"{col} = ?" for col in filters.keys())
     values = tuple(filters.values())
 
     query = f"""
@@ -177,16 +240,6 @@ def get_row_from_table(conn, table, filters: dict):
     row = conn.execute(query, values).fetchone()
     return dict(row) if row else None
 
-def set_show_tmdb_id(conn, show_name, tmdb_id):
-    """
-
-    """
-    result = conn.execute(
-        "UPDATE shows SET tmdb_id = ? WHERE show_name = ?",
-        (tmdb_id, show_name)
-    )
-    conn.commit()
-    return result.rowcount
 
 def _attrs_vals_in_table(conn, spec):
     """
@@ -303,8 +356,6 @@ def _add_or_ignore_to_table(conn, spec: dict):
         return row[0] if row else None
 
     return
-
-
 
 def get_connection():
     if not DB_PATH.exists():
@@ -457,7 +508,7 @@ def process_movie_request(request, movies_table):
                     obtained_movie = get_row_from_table(conn, "movies", {"rating_key": rating_key})
                 else:
                     # it was obtained using tmdbId
-                    obtained_movie = get_row_from_table(conn, "movies", {"tmdb_id", tmdbId})
+                    obtained_movie = get_row_from_table(conn, "movies", {"tmdb_id": tmdbId})
 
                 movie_id = obtained_movie["movie_id"]
                 movie_name = obtained_movie["movie_name"]
@@ -482,7 +533,11 @@ def process_movie_request(request, movies_table):
                 #     request will be assigned to them.
                 username = request["requestedBy"]["username"]
                 if (username):
-                    user_plex_id = get_field_from_table(conn, "users", "user_id", {"username": username})
+                    user_plex_id = get_fields_from_table(conn, {
+                        "table": "users",
+                        "get": "user_id",
+                        "where": {"username": username}
+                    })
 
             request_id = _add_to_table(conn, {
                 "table": "movie_requests",
@@ -614,7 +669,11 @@ def process_tv_request(request, shows_table):
                 #     request will be assigned to them.
                 username = request["requestedBy"]["username"]
                 if (username):
-                    user_plex_id = get_field_from_table(conn, "users", "user_id", {"username": username})
+                    user_plex_id = get_fields_from_table(conn,{
+                        "table": "users",
+                        "get": "user_id",
+                        "where": {"username": username}
+                    })
 
             print(len(request["seasons"]))
             for season in request["seasons"]:
@@ -622,8 +681,12 @@ def process_tv_request(request, shows_table):
                 season_num = season["seasonNumber"]
 
                 # get the season_id from the "seasons" table from the entry with the
-                # given show_id and season_num combination
-                season_id = get_field_from_table(conn, "seasons", "season_id" {"show_id": show_id, "season_num": season_num})
+                # given show_id and season_num combination})
+                season_id = get_fields_from_table(conn, {
+                    "table": "seasons",
+                    "get": "season_id",
+                    "where": {"show_id": show_id, "season_num": season_num}
+                })
                 
                 request_id = _add_to_table(conn, {
                     "table": "season_requests",
@@ -642,6 +705,145 @@ def process_tv_request(request, shows_table):
                 if not request_id:
                     print(f"    season_id: {season_id}, show_id: {show_id}, requested_at: {get_unix_from_iso(season["createdAt"])}, updated_at: {get_unix_from_iso(season["updatedAt"])}, user_id: {user_plex_id}")
                     print(f"    tried to get season id {season_id}. Did get_season_id_from_show_id_season_num(conn, {show_id}, {season_num})")
+
+def get_tvdb_id_for_show(conn, show_name, year):
+    """
+    returns the tvdb_id for a given show.
+      * obtains the ID from TVDB if not already present in the database
+
+    """
+
+    query = f"""
+        SELECT tvdb_id
+        FROM shows
+        WHERE show_name = ? AND year = ?
+        LIMIT 1
+    """
+
+    row = conn.execute(query, (show_name, year)).fetchone()
+
+    if row and row["tvdb_id"]:
+        return row["tvdb_id"]
+
+    tvdb_id = tvdb.get_show_tvdb_id(show_name, year)
+
+    if tvdb_id:
+        with conn:
+            conn.execute(
+                "UPDATE shows SET tvdb_id = ? WHERE show_name = ? AND year = ?",
+                (tvdb_id, show_name, year)
+            )
+
+    return tvdb_id
+
+def get_recent_episodes(conn, show_id):
+    """
+    Returns rows from the episodes table for episodes of the given show
+    that have aired in the last 7 days (determined via the TVDB API).
+    """
+    # get show info
+    result = get_fields_from_table(conn, {
+        "table": "shows",
+        "get": ["show_name", "year"],
+        "where": {"show_id": show_id}
+    })
+    if not result:
+        return []
+
+    tvdb_id = get_tvdb_id_for_show(conn, result["show_name"], result["year"])
+    if not tvdb_id:
+        return []
+
+    api_episodes = tvdb.get_recent_episodes(tvdb_id)
+    if not api_episodes:
+        return []
+
+    seven_days_ago = date.today() - timedelta(days=7)
+
+    # collect recent episodes as (season_num, number)
+    recent_eps = [
+        (ep["seasonNumber"], ep["number"])
+        for ep in api_episodes
+        if ep.get("aired")
+        and seven_days_ago <= datetime.strptime(ep["aired"], "%Y-%m-%d").date() <= date.today()
+    ]
+
+    if not recent_eps:
+        return []
+
+    # fetch corresponding episodes from the database
+    rows = []
+    for season_num, number in recent_eps:
+        season_row = conn.execute("""
+            SELECT season_id FROM seasons
+            WHERE show_id = ? AND season_num = ?
+        """, (show_id, season_num)).fetchone()
+        if not season_row:
+            continue
+
+        season_id = season_row["season_id"]
+
+        episode_row = conn.execute("""
+            SELECT *
+            FROM episodes
+            WHERE show_id = ? AND season_id = ? AND number = ?
+        """, (show_id, season_id, number)).fetchone()
+
+        if episode_row:
+            rows.append(dict(episode_row))
+
+    return rows
+
+
+def get_all_shows_watched_by_user(user_id):
+    """
+    get a list of all shows watched by a given user.
+    (get every entry of the 'episode_watches' table with the given user_id, then get the
+     corresponding show from the 'shows' table. each show only appears once in result)
+    """
+    query = """
+        SELECT DISTINCT s.*
+        FROM episode_watches ew
+        JOIN episodes e ON ew.episode_id = e.episode_id
+        JOIN shows s ON e.show_id = s.show_id
+        WHERE ew.user_id = ?
+    """
+
+    with get_connection() as conn:
+        rows = conn.execute(query, (user_id,)).fetchall()
+        result = [dict(row) for row in rows]
+
+        for show in result:
+            with get_connection() as conn:
+                episodes = get_recent_episodes(conn, show["show_id"])
+
+            print(f"GOT SHOW {show["show_name"]} ({show["year"]}), with recent episodes: {episodes}")
+
+        return result
+
+def get_shows_with_new_episodes(user_id):
+    """
+    get a list of shows that have been watched by the given 'user_id' that have had
+    a new episode released in the last week.
+    will return whether the episode has been watched by the user already.
+    """
+
+def get_new_episodes_for_user(user_id):
+    """
+    get a list of shows that the given user has watched, that have new episodes
+    that have been released in the last 7 days. IT WILL IGNORE episodes that the
+    user has already watched.
+    """
+    shows = get_all_shows_watched_by_user(user_id)
+
+    for show in shows:
+        print(f"Considering show {show["show_name"]} ({show["year"]})")
+        with get_connection() as conn:
+            recent_episodes = get_recent_episodes(conn, show["show_id"])
+            if not recent_episodes:
+                print(f"    - Show has no recent episodes")
+            else:
+                print(f"    - Show has {len(recent_episodes)} recent episodes.")
 
 def get_user_requests(user_id):
     """
@@ -1255,6 +1457,7 @@ def init_db():
                 show_name TEXT,
                 year INTEGER,
                 rating_key INTEGER,
+                tvdb_id INTEGER UNIQUE,
                 tmdb_id INTEGER UNIQUE,
                 tmdb_poster_url TEXT,
                 tautulli_poster_url TEXT,
@@ -1303,6 +1506,7 @@ def init_db():
                 status INTEGER NOT NULL,
                 updated_at INTEGER,
                 user_id INTEGER NOT NULL REFERENCES users(user_id),
+                overseerr_request_id INTEGER,
                 UNIQUE(season_id, requested_at, user_id)
             );
         """)
@@ -1366,6 +1570,7 @@ def init_db():
                 updated_at INTEGER NOT NULL,
                 user_id INTEGER,
                 tmdb_poster_url TEXT,
+                overseerr_request_id INTEGER,
                 UNIQUE(movie_id, requested_at, user_id)
             );
         """)

@@ -227,6 +227,10 @@ def tvdb_validate_token():
 def tvdb_get_new_token():
     return tvdb.get_new_token()
 
+@router.post("/tvdb/get_show_tvdb_id")
+def tvdb_get_show_tvdb_id(data: APIModel):
+    return tvdb.get_show_tvdb_id(data.key)
+
 # ---------------------------------------- #
 #                   TMDB                   #
 # ---------------------------------------- #
@@ -307,6 +311,10 @@ def get_movie_poster_image(data: APIModel):
 @router.post("/get_show_poster_image")
 def get_show_poster_image(data: APIModel):
     return db.get_poster_image(show_id=data.key)
+
+@router.post("/get_all_shows_watched_by_user")
+def get_all_shows_watched_by_user(data: APIModel):
+    return db.get_all_shows_watched_by_user(data.key)
 
 @router.get("/get_users")
 def get_users():
