@@ -1089,6 +1089,12 @@ def populate_shows():
                         episode_number = episode["media_index"]
                         episode_year = episode["year"]
                         episode_rating_key = episode["rating_key"]
+
+                        b = False
+                        if (str(user_id)=="182886173" and show_name=="The Pitt" and str(season_number)=="2" and str(episode_number)=="7"):
+                            print(f"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1")
+                            print(f"Considering The Pitt S2E7 for Grace")
+                            b = True
                         
                         #  consider show
                         #print(f"Considering show {show_name}")
@@ -1096,12 +1102,16 @@ def populate_shows():
                         show_id = None
                         if show_metadata and show_metadata.get("year"):
                             show_year = show_metadata["year"]
+                            if b:
+                                print(f"We already knew the year from the metadata: {show_year}")
                         else:
                             # we need to know the year of the show. if this is the first ep
                             # of the first season, the episode's year is the same as the show's,
                             # so we can use that.
                             if int(season_number) == 1 and int(episode_number) == 1:
                                 show_year = episode_year
+                                if b:
+                                    print(f"We figured out the year of the show from the year of the episode: {show_year}")
                             # else:
                                 # we don't know the show year therefore all we know is the name and rating key,
                                 # and two instances of the same show may have different rating keys in
@@ -1129,6 +1139,11 @@ def populate_shows():
                                     },
                                     "return": "show_id"
                                 })
+                                if b:
+                                    print(f"We didn't already know the ID of the show, so we added it, getting {existing_id}")
+                            else:
+                                if b:
+                                    print(f"We already have the show so we got ID: {existing_id}")
                         else:
                             # we don't know the name+year of the show, we cannot add it yet.
                             # that being said, if there is a show in the table with the same name+rating_key
@@ -1141,11 +1156,15 @@ def populate_shows():
                                 },
                                 "return": "show_id"
                             })
+                            if b:
+                                print(f"We already have the show so we got ID: {existing_id}")
 
                         # if the existing_id is still None by this point, there is no way to figure out the show's name+year
                         # list this show as a failure and move on.
                         if not existing_id:
                             #print("NO EXISTING ID")
+                            if b:
+                                print(f"FAILED FOR SOME REASON???? (while trying to get existing_id)")
                             continue
                         
                         # show is now (or already was) in the shows table. now consider season.
@@ -1165,7 +1184,8 @@ def populate_shows():
                                     "show_id": existing_id,
                                     "season_num": season_number,
                                     "rating_key": season_rating_key
-                                }
+                                },
+                                "return": "season_id"
                             })
 
                         # now consider episode.
@@ -1176,7 +1196,8 @@ def populate_shows():
                                 "show_id": existing_id,
                                 "number": episode_number,
                                 "name": episode_name
-                            }
+                            },
+                            "return": "episode_id"
                         })
                         if not episode_id:
                             episode_id = _add_to_table(conn, {
@@ -1192,7 +1213,7 @@ def populate_shows():
                             })
 
                         # now add the episode watch to the table
-                        _add_to_table(conn, {
+                        watch_id = _add_to_table(conn, {
                             "table": "episode_watches",
                             "data": {
                                 "user_id": user_id,
@@ -1200,8 +1221,12 @@ def populate_shows():
                                 "started": episode["started"],
                                 "stopped": episode["stopped"],
                                 "pause_duration": episode["paused_counter"]
-                            }
+                            },
+                            "return": "watch_id"
                         })
+                        if b:
+                            print(f"SUCCESSFULLY ADDED: {watch_id}")
+                            print(f"Added: {user_id}, {episode_id}, {episode["started"]}, {episode["stopped"]}, {episode["paused_counter"]}")
 
             print_line("Finished processing shows from /get_history endpoint.")
             print_hr()
