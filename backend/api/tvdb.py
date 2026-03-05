@@ -36,6 +36,14 @@ def getFromAPI(cmd, args=None, forceFresh=False):
     if not api_key or not api_url:
         return None
 
+    if not api_token:
+        # generate new token
+        api_token = get_new_token() # function auto saves the new token
+    else:
+        # validate the token
+        if not validate_token():
+            api_token = get_new_token() # function auto saves the new token
+
     url = f"{api_url}/{cmd.lstrip('/')}" # avoid double slashes
     headers = {
         "Authorization": f"Bearer {api_token}"
@@ -60,27 +68,22 @@ def validate_token():
     headers = {
         "Authorization": f"Bearer {api_token}"
     }
-    print(headers)
+
     response = requests.get(f"{api_url}/languages", headers=headers)
     if response.status_code == 200:
-        print("VALID")
         return True
     else:
-        print("INVALID")
         return False
 
 def get_new_token():
     cnf = config.get_tvdb_config()
-    api_url = cnf['api_url'].rstrip("/")
-    api_key = cnf['api_key']
+    api_url = str(cnf['api_url'].rstrip("/"))
+    api_key = str(cnf['api_key'])
     payload = {
         "apikey": api_key
     }
-    headers = {
-        "Content-Type": "application/json"
-    }
 
-    response = requests.post(f"{api_url}/login", json=payload, headers=headers)
+    response = requests.post(f"{api_url}/login", json=payload)
     
     if response:
         token = response.json()["data"]["token"]
@@ -88,7 +91,6 @@ def get_new_token():
             return None
 
         config.set_config_value("TVDB_TOKEN", token)
-
         return token
     
     return None

@@ -723,6 +723,7 @@ def get_tvdb_id_for_show(conn, show_name, year):
     row = conn.execute(query, (show_name, year)).fetchone()
 
     if row and row["tvdb_id"]:
+        print(f"Found row {row} with {row["tvdb_id"]}")
         return row["tvdb_id"]
 
     tvdb_id = tvdb.get_show_tvdb_id(show_name, year)
@@ -748,14 +749,17 @@ def get_recent_episodes(conn, show_id):
         "where": {"show_id": show_id}
     })
     if not result:
+        print("no result")
         return []
 
     tvdb_id = get_tvdb_id_for_show(conn, result["show_name"], result["year"])
     if not tvdb_id:
+        print("no tvdb id")
         return []
 
     api_episodes = tvdb.get_recent_episodes(tvdb_id)
     if not api_episodes:
+        print("no api episodes")
         return []
 
     seven_days_ago = date.today() - timedelta(days=7)

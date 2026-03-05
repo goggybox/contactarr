@@ -835,7 +835,7 @@ window.onload = async function() {
         displayTautulliError();
     }
 
-    await this.fetch("/backend/get_all_shows_watched_by_user", {
+    const res = await this.fetch("/backend/get_new_episodes_for_user", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -844,6 +844,8 @@ window.onload = async function() {
             key: "31427928"
         })
     });
+    const data = await res.json();
+    console.log(data);
 
     // add event listener to send email button
     document.getElementById("send-email-button").addEventListener("click", () => sendEmail(selected_email));

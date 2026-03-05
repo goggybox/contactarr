@@ -316,6 +316,10 @@ def get_show_poster_image(data: APIModel):
 def get_all_shows_watched_by_user(data: APIModel):
     return db.get_all_shows_watched_by_user(data.key)
 
+@router.post("/get_new_episodes_for_user")
+def get_new_episodes_for_user(data: APIModel):
+    return db.get_new_episodes_for_user(data.key)
+
 @router.get("/get_users")
 def get_users():
     return db.get_users()

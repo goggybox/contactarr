@@ -1,6 +1,6 @@
-.env
-.api_cache
+*.env
+*.api_cache
 docker-compose.yml
 Dockerfile
-.db
+*.db
 example-overseerr-email/
